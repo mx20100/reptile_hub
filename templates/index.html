@@ -70,6 +70,10 @@
         </button>
 
         <h1>Settings</h1>
+        <div style="background: var(--btn); border: 1px solid var(--btn-border); padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <p style="margin: 0; font-size: 16px; color: var(--text);">Access Hub from any device on your Wi-Fi:</p>
+            <p style="margin: 8px 0 0 0; font-size: 24px; font-weight: bold; color: #4CAF50;" id="pi-ip-address">Loading...</p>
+        </div>
         <button onclick="toggleTheme()" id="theme-btn" style="width: 100%; margin-bottom: 20px;">Toggle Theme</button>
         
         <h3>Add New Animal</h3>
@@ -134,13 +138,26 @@
             if(id === 'home') {
                 loadData();
             } else if (id === 'settings') {
-                // Fetch the Wi-Fi network name only when opening settings
+                // Fetch the Wi-Fi network name
                 try {
                     const res = await fetch('/api/wifi/current');
                     const data = await res.json();
                     document.getElementById('current-ssid').innerText = data.ssid;
                 } catch(err) {
                     document.getElementById('current-ssid').innerText = 'Offline';
+                }
+            
+                // NEW: Fetch the IP Address and format it as a clickable link
+                try {
+                    const ipRes = await fetch('/api/ip');
+                    const ipData = await ipRes.json();
+                    if (ipData.ip !== 'Offline' && ipData.ip !== 'Error') {
+                        document.getElementById('pi-ip-address').innerText = "http://" + ipData.ip + ":5000";
+                    } else {
+                        document.getElementById('pi-ip-address').innerText = "Connect to Wi-Fi first";
+                    }
+                } catch(err) {
+                    document.getElementById('pi-ip-address').innerText = "Unavailable";
                 }
             }
         }

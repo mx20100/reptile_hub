@@ -148,6 +148,17 @@ def connect_wifi():
             return jsonify({'success': False, 'error': result.stderr})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/api/ip', methods=['GET'])
+def get_ip():
+    try:
+        # 'hostname -I' asks the Pi for its network IP addresses
+        result = subprocess.run(['hostname', '-I'], capture_output=True, text=True)
+        # It usually returns a list separated by spaces, so we grab the first one
+        ip_address = result.stdout.split()[0] if result.stdout.strip() else 'Offline'
+        return jsonify({'ip': ip_address})
+    except Exception:
+        return jsonify({'ip': 'Error'})
     
 @app.route('/api/wifi/skip', methods=['POST'])
 def skip_wifi():
