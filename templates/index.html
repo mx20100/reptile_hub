@@ -5,38 +5,171 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Reptile Hub</title>
     <style>
-        :root { --bg: #f4f4f4; --text: #333; --btn: #fff; --btn-border: #ccc; }
-        body.dark-theme { --bg: #1a1a1a; --text: #f4f4f4; --btn: #333; --btn-border: #555; }
+        :root { 
+            --bg: #f4f4f4; 
+            --text: #333; 
+            --btn: #fff; 
+            --btn-border: #ccc; 
+        }
+
+        body.dark-theme { 
+            --bg: #1a1a1a; 
+            --text: #f4f4f4; 
+            --btn: #333; 
+            --btn-border: #555; 
+        }
         
-        body { background-color: var(--bg); color: var(--text); font-family: sans-serif; margin: 0; padding: 10px; height: 100vh; width: 100vw; overflow: hidden; box-sizing: border-box;}
-        h1 { margin: 5px 0; font-size: 24px; text-align: center; }
+        body { 
+            background-color: var(--bg); 
+            color: var(--text); 
+            font-family: sans-serif; 
+            margin: 0; 
+            padding: 10px; 
+            height: 100vh; 
+            width: 100vw; 
+            overflow: hidden; 
+            box-sizing: border-box;
+        }
+
+        h1 { 
+            margin: 5px 0; 
+            font-size: 24px; 
+            text-align: center; 
+        }
         
         /* Grid for main buttons */
-        #main-view { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; height: 380px; }
-        .animal-btn { background: var(--btn); color: var(--text); border: 2px solid var(--btn-border); border-radius: 10px; font-size: 28px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-direction: column;}
+        #main-view { 
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            gap: 15px; 
+            height: 380px; 
+        }
+
+        .animal-btn { 
+            background: var(--btn); 
+            color: var(--text); 
+            border: 2px solid var(--btn-border); 
+            border-radius: 10px; 
+            font-size: 28px; 
+            cursor: pointer; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            flex-direction: column;
+        }
         
         /* Modals / Screens */
-        .screen { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg); padding: 20px; box-sizing: border-box; z-index: 10; }
+        .screen { 
+            display: none; 
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            background: var(--bg); 
+            padding: 20px; 
+            box-sizing: border-box; 
+            z-index: 10; 
+        }
+
         .active { display: block; }
         
-        .action-btns { display: grid; grid-template-columns: 1fr; gap: 15px; margin-top: 20px;}
-        button { padding: 15px; font-size: 22px; border-radius: 8px; cursor: pointer; background: var(--btn); color: var(--text); border: 1px solid var(--btn-border);}
+        .action-btns { 
+            display: grid; 
+            grid-template-columns: 1fr; 
+            gap: 15px; 
+            margin-top: 20px;
+        }
+        button { 
+            padding: 15px; 
+            font-size: 22px; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            background: var(--btn); 
+            color: var(--text); 
+            border: 1px solid var(--btn-border);
+        }
         
         /* Animations for feeding */
-        @keyframes pulse-red { 0% { background-color: var(--btn); } 100% { background-color: #ff4c4c; color: white;} }
-        @keyframes pulse-white { 0% { background-color: var(--btn); } 100% { background-color: #ffffff; color: black; } }
+        @keyframes pulse-red { 
+            0% { 
+                background-color: var(--btn); 
+            } 
+            100% { 
+                background-color: #ff4c4c; 
+                color: white;
+            } 
+        }
+
+        @keyframes pulse-white { 
+            0% { 
+                background-color: var(--btn); 
+            } 
+            100% { 
+                background-color: #ffffff; 
+                color: black; 
+            } 
+        }
         
         body:not(.dark-theme) .needs-feeding { animation: pulse-red 0.4s ease-in-out infinite alternate; }
         body.dark-theme .needs-feeding { animation: pulse-white 0.4s ease-in-out infinite alternate; }
         
-        #settings-btn { position: absolute; bottom: 10px; right: 10px; font-size: 16px; padding: 10px; }
-        .close-btn { background: #ff4c4c; color: white; border: none; }
+        #settings-btn { 
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            font-size: 16px;
+            padding: 10px; 
+        }
+        
+        .close-btn { 
+            background: #ff4c4c; 
+            color: white; 
+            border: none; 
+        }
         
         /* Form inputs */
-        input, select { padding: 10px; font-size: 18px; margin: 5px 0; width: 100%; box-sizing: border-box; background: var(--btn); color: var(--text); border: 1px solid var(--btn-border);}
+        input, select { 
+            padding: 10px;
+            font-size: 18px;
+            margin: 5px 0;
+            width: 100%;
+            box-sizing: border-box;
+            background: var(--btn);
+            color: var(--text);
+            border: 1px solid var(--btn-border);
+        }
+
+        /* Toast Notification */
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: -400px; /* Hidden off-screen by default */
+            background: #4CAF50; /* Success Green */
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            font-size: 18px;
+            transition: right 0.4s ease-in-out;
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .toast.show {
+            right: 20px; /* Slides into view */
+        }
+        .toast.error {
+            background: #f44336; /* Error Red */
+        }
     </style>
 </head>
 <body>
+    <div id="toast" class="toast">
+        <span id="toast-icon">✅</span>
+        <span id="toast-msg">Action successful!</span>
+    </div>
 
     <div id="home" class="screen active">
         <h1>Reptile Hub</h1>
@@ -47,8 +180,8 @@
     <div id="animal-actions" class="screen">
         <h1 id="action-title">Animal Name</h1>
         <div class="action-btns">
-            <button onclick="logAction('fed')">We Fed Them!</button>
-            <button onclick="weighAnimal()">We Weighed Them!</button>
+            <button onclick="logAction('fed')">Animal Fed</button>
+            <button onclick="weighAnimal()">Animal Weighed</button>
             <button onclick="showInfo()">Information</button>
             <button class="close-btn" onclick="showScreen('home')">Back</button>
         </div>
@@ -112,6 +245,34 @@
             mealInput.style.display = (cat === 'Snakes') ? 'block' : 'none';
         }
 
+        let toastTimeout;
+        function showToast(message, isError = false) {
+            const toast = document.getElementById('toast');
+            const msg = document.getElementById('toast-msg');
+            const icon = document.getElementById('toast-icon');
+
+            // Set the text and colors
+            msg.innerText = message;
+            if (isError) {
+                toast.classList.add('error');
+                icon.innerText = '⚠️';
+            } else {
+                toast.classList.remove('error');
+                icon.innerText = '✅';
+            }
+
+            // Slide it in
+            toast.classList.add('show');
+
+            // Clear any existing timers so it doesn't hide too early if you click fast
+            clearTimeout(toastTimeout);
+
+            // Slide it out after 3 seconds
+            toastTimeout = setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
         async function loadData() {
             const res = await fetch('/api/data');
             const data = await res.json();
@@ -167,7 +328,7 @@
                 method: 'POST', headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({animal_id: currentAnimal.id, action: action, value: value})
             });
-            alert('Logged successfully!');
+            showToast('Logged successfully!');
             showScreen('home');
         }
 
@@ -188,7 +349,7 @@
             showScreen('animal-info');
         }
 
-        // New Delete Function
+        // Delete Function
         async function deleteAnimal() {
             if(confirm(`Are you sure you want to delete ${currentAnimal.name}? This will permanently erase their logs.`)) {
                 await fetch('/api/animal', { 
@@ -196,7 +357,7 @@
                     headers: {'Content-Type': 'application/json'}, 
                     body: JSON.stringify({id: currentAnimal.id})
                 });
-                alert(`${currentAnimal.name} has been removed.`);
+                showToast(`${currentAnimal.name} has been removed.`);
                 showScreen('home');
             }
         }
@@ -209,9 +370,9 @@
                 feed_days: parseInt(document.getElementById('new-freq').value),
                 meal_size: parseInt(document.getElementById('new-meal').value || 0)
             };
-            if(!data.name || isNaN(data.feed_days)) return alert("Please fill name and frequency.");
+            if(!data.name || isNaN(data.feed_days)) return showToast("Please fill name and frequency.", true);
             await fetch('/api/animal', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data)});
-            alert('Animal Added!');
+            showToast('Animal Added!');
             loadData();
         }
 
