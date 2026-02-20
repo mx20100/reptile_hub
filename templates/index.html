@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reptile Hub</title>
+    <style>
+        :root { --bg: #f4f4f4; --text: #333; --btn: #fff; --btn-border: #ccc; }
+        body.dark-theme { --bg: #1a1a1a; --text: #f4f4f4; --btn: #333; --btn-border: #555; }
+        
+        body { background-color: var(--bg); color: var(--text); font-family: sans-serif; margin: 0; padding: 10px; height: 100vh; width: 100vw; overflow: hidden; box-sizing: border-box;}
+        h1 { margin: 5px 0; font-size: 24px; text-align: center; }
+        
+        /* Grid for main buttons */
+        #main-view { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; height: 380px; }
+        .animal-btn { background: var(--btn); color: var(--text); border: 2px solid var(--btn-border); border-radius: 10px; font-size: 28px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-direction: column;}
+        
+        /* Modals / Screens */
+        .screen { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg); padding: 20px; box-sizing: border-box; z-index: 10; }
+        .active { display: block; }
+        
+        .action-btns { display: grid; grid-template-columns: 1fr; gap: 15px; margin-top: 20px;}
+        button { padding: 15px; font-size: 22px; border-radius: 8px; cursor: pointer; background: var(--btn); color: var(--text); border: 1px solid var(--btn-border);}
+        
+        /* Animations for feeding */
+        @keyframes pulse-red { 0% { background-color: var(--btn); } 100% { background-color: #ff4c4c; color: white;} }
+        @keyframes pulse-white { 0% { background-color: var(--btn); } 100% { background-color: #ffffff; color: black; } }
+        
+        body:not(.dark-theme) .needs-feeding { animation: pulse-red 0.4s ease-in-out infinite alternate; }
+        body.dark-theme .needs-feeding { animation: pulse-white 0.4s ease-in-out infinite alternate; }
+        
+        #settings-btn { position: absolute; bottom: 10px; right: 10px; font-size: 16px; padding: 10px; }
+        .close-btn { background: #ff4c4c; color: white; border: none; }
+        
+        /* Form inputs */
+        input, select { padding: 10px; font-size: 18px; margin: 5px 0; width: 100%; box-sizing: border-box; background: var(--btn); color: var(--text); border: 1px solid var(--btn-border);}
+    </style>
+</head>
+<body>
+
+    <div id="home" class="screen active">
+        <h1>Reptile Hub</h1>
+        <div id="main-view"></div>
+        <button id="settings-btn" onclick="showScreen('settings')">⚙️ Settings</button>
+    </div>
+
+    <div id="animal-actions" class="screen">
+        <h1 id="action-title">Animal Name</h1>
+        <div class="action-btns">
+            <button onclick="logAction('fed')">We Fed Them!</button>
+            <button onclick="weighAnimal()">We Weighed Them!</button>
+            <button onclick="showInfo()">Information</button>
+            <button class="close-btn" onclick="showScreen('home')">Back</button>
+        </div>
+    </div>
+
+    <div id="animal-info" class="screen">
+        <h1 id="info-title">Information</h1>
+        <div style="font-size: 24px; line-height: 1.8; margin-top: 20px;" id="info-content"></div>
+        
+        <button class="close-btn" style="position: absolute; bottom: 80px; width: calc(100% - 40px); background: #8b0000;" onclick="deleteAnimal()">Delete Animal</button>
+        
+        <button class="close-btn" style="position: absolute; bottom: 20px; width: calc(100% - 40px);" onclick="showScreen('animal-actions')">Back</button>
+    </div>
+
+    <div id="settings" class="screen" style="overflow-y: auto; position: relative;">
+        <button onclick="window.location.href='/wifi_setup'" style="position: absolute; top: 10px; right: 10px; padding: 6px 12px; border-radius: 6px; background: var(--btn); border: 1px solid var(--btn-border); color: var(--text); font-size: 14px; cursor: pointer; display: flex; align-items: center; gap: 8px; width: auto; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
+            <span>📶</span>
+            <span id="current-ssid">Checking...</span>
+        </button>
+
+        <h1>Settings</h1>
+        <button onclick="toggleTheme()" id="theme-btn" style="width: 100%; margin-bottom: 20px;">Toggle Theme</button>
+        
+        <h3>Add New Animal</h3>
+        <input type="text" id="new-name" placeholder="Name">
+        <select id="new-category" onchange="updateSpecies()">
+            <option value="Geckos">Geckos</option>
+            <option value="Lizards">Lizards</option>
+            <option value="Snakes">Snakes</option>
+        </select>
+        <select id="new-species"></select>
+        <input type="number" id="new-freq" placeholder="Feed Frequency (1-30 Days)" min="1" max="30">
+        <input type="number" id="new-meal" placeholder="Meal Size (grams, Snakes only)" style="display:none;">
+        <button style="width: 100%; background: #4CAF50; color: white; margin-top:10px;" onclick="addAnimal()">Add Animal</button>
+
+        <button class="close-btn" style="width: 100%; margin-top: 20px;" onclick="showScreen('home')">Back to Home</button>
+    </div>
+
+    <script>
+        let currentAnimal = null;
+        let animalsData = [];
+        
+        const speciesMap = {
+            "Geckos": ["Leopard Gecko", "Crested Gecko", "Gargoyle Gecko", "Chahoua Gecko"],
+            "Lizards": ["Ackie monitor", "Bearded dragon"],
+            "Snakes": ["Ball Python", "Plains Hognose", "King snake", "Corn snake"]
+        };
+
+        function updateSpecies() {
+            const cat = document.getElementById('new-category').value;
+            const specSelect = document.getElementById('new-species');
+            const mealInput = document.getElementById('new-meal');
+            specSelect.innerHTML = '';
+            speciesMap[cat].forEach(sp => {
+                specSelect.innerHTML += `<option value="${sp}">${sp}</option>`;
+            });
+            mealInput.style.display = (cat === 'Snakes') ? 'block' : 'none';
+        }
+
+        async function loadData() {
+            const res = await fetch('/api/data');
+            const data = await res.json();
+            animalsData = data.animals;
+            
+            document.body.className = data.theme === 'dark' ? 'dark-theme' : '';
+            
+            const main = document.getElementById('main-view');
+            main.innerHTML = '';
+            animalsData.forEach(a => {
+                const btn = document.createElement('button');
+                btn.className = 'animal-btn' + (a.needs_feeding ? ' needs-feeding' : '');
+                btn.innerHTML = `<strong>${a.name}</strong><span style="font-size:16px;">${a.species}</span>`;
+                btn.onclick = () => { currentAnimal = a; showScreen('animal-actions'); document.getElementById('action-title').innerText = a.name; };
+                main.appendChild(btn);
+            });
+            updateSpecies();
+        }
+
+        async function showScreen(id) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            
+            if(id === 'home') {
+                loadData();
+            } else if (id === 'settings') {
+                // Fetch the Wi-Fi network name only when opening settings
+                try {
+                    const res = await fetch('/api/wifi/current');
+                    const data = await res.json();
+                    document.getElementById('current-ssid').innerText = data.ssid;
+                } catch(err) {
+                    document.getElementById('current-ssid').innerText = 'Offline';
+                }
+            }
+        }
+
+        async function logAction(action, value=0) {
+            await fetch('/api/action', {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({animal_id: currentAnimal.id, action: action, value: value})
+            });
+            alert('Logged successfully!');
+            showScreen('home');
+        }
+
+        function weighAnimal() {
+            const weight = prompt("Enter weight in grams:");
+            if (weight && !isNaN(weight)) logAction('weighed', parseFloat(weight));
+        }
+
+        function showInfo() {
+            document.getElementById('info-title').innerText = currentAnimal.name + " Info";
+            let html = `Last Fed: ${currentAnimal.last_fed}<br>Next Feed Due: ${currentAnimal.next_fed}<br>Frequency: Every ${currentAnimal.feed_days} days`;
+            if (currentAnimal.category === 'Snakes') html += `<br>Target Meal Size: ${currentAnimal.meal_size}g`;
+            
+            // New Weight Display
+            html += `<br><br>Last Weight: <strong>${currentAnimal.last_weight}</strong><br><span style="font-size: 18px;">(Weighed on: ${currentAnimal.last_weighed_date})</span>`;
+            
+            document.getElementById('info-content').innerHTML = html;
+            showScreen('animal-info');
+        }
+
+        // New Delete Function
+        async function deleteAnimal() {
+            if(confirm(`Are you sure you want to delete ${currentAnimal.name}? This will permanently erase their logs.`)) {
+                await fetch('/api/animal', { 
+                    method: 'DELETE', 
+                    headers: {'Content-Type': 'application/json'}, 
+                    body: JSON.stringify({id: currentAnimal.id})
+                });
+                alert(`${currentAnimal.name} has been removed.`);
+                showScreen('home');
+            }
+        }
+
+        async function addAnimal() {
+            const data = {
+                name: document.getElementById('new-name').value,
+                category: document.getElementById('new-category').value,
+                species: document.getElementById('new-species').value,
+                feed_days: parseInt(document.getElementById('new-freq').value),
+                meal_size: parseInt(document.getElementById('new-meal').value || 0)
+            };
+            if(!data.name || isNaN(data.feed_days)) return alert("Please fill name and frequency.");
+            await fetch('/api/animal', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data)});
+            alert('Animal Added!');
+            loadData();
+        }
+
+        async function toggleTheme() {
+            const newTheme = document.body.classList.contains('dark-theme') ? 'light' : 'dark';
+            document.body.className = newTheme === 'dark' ? 'dark-theme' : '';
+            await fetch('/api/theme', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({theme: newTheme})});
+        }
+        
+        // Auto-refresh the data every 1 hour (3600000 milliseconds)
+        setInterval(() => {
+            // Only update if the user is looking at the main Home screen
+            if (document.getElementById('home').classList.contains('active')) {
+                loadData();
+            }
+        }, 3600000);
+
+        window.onload = loadData;
+    </script>
+
+    <style>
+    /* Prevents text highlighting while dragging, and ensures all screens can scroll */
+    body { user-select: none; }
+    input, textarea, select { user-select: auto; }
+    .screen { overflow-y: auto; padding-bottom: 20px; }
+</style>
+
+<script>
+    // --- FEATURE 1: Prevent Keyboard from hiding inputs ---
+    document.querySelectorAll('input, select').forEach(input => {
+        input.addEventListener('focus', () => {
+            // 1. Find the screen you are currently looking at
+            const activeContainer = document.querySelector('.screen.active') || document.body;
+            
+            // 2. Add 260px of empty space to the bottom so the keyboard doesn't cover content
+            activeContainer.style.paddingBottom = '260px'; 
+            
+            // 3. Scroll the input box to the center of the visible area
+            setTimeout(() => {
+                input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 300);
+        });
+        
+        input.addEventListener('blur', () => {
+            // When you tap away from the input, remove the extra padding
+            const activeContainer = document.querySelector('.screen.active') || document.body;
+            activeContainer.style.paddingBottom = '20px';
+        });
+    });
+
+    // --- FEATURE 2: Touch Drag-to-Scroll (Fixed for your app structure) ---
+    let isDown = false;
+    let startY;
+    let scrollTop;
+    let scrollContainer;
+
+    // Listens for both mouse drags (X11 emulation) and raw touch drags
+    function startDrag(e) {
+        // Target the specific screen you are on, NOT the locked body
+        scrollContainer = e.target.closest('.screen.active') || document.body;
+        isDown = true;
+        const pageY = e.pageY || e.touches[0].pageY;
+        startY = pageY - scrollContainer.offsetTop;
+        scrollTop = scrollContainer.scrollTop;
+    }
+
+    function stopDrag() { isDown = false; }
+
+    function drag(e) {
+        if (!isDown || !scrollContainer) return;
+        // e.preventDefault(); // (Uncomment if you find the screen accidentally highlighting things)
+        const pageY = e.pageY || e.touches[0].pageY;
+        const y = pageY - scrollContainer.offsetTop;
+        const walk = (y - startY) * 1.5; // Drag speed multiplier
+        scrollContainer.scrollTop = scrollTop - walk;
+    }
+
+    // Mouse events
+    document.addEventListener('mousedown', startDrag);
+    document.addEventListener('mouseleave', stopDrag);
+    document.addEventListener('mouseup', stopDrag);
+    document.addEventListener('mousemove', drag);
+
+    // Touch events
+    document.addEventListener('touchstart', startDrag, {passive: true});
+    document.addEventListener('touchend', stopDrag);
+    document.addEventListener('touchmove', drag, {passive: true});
+</script>  
+</body>
+</html>

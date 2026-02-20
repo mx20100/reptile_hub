@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Wi-Fi Setup</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            background: #f4f4f4; 
+            margin: 0; 
+            padding: 20px; 
+            height: 100vh; 
+            width: 100vw; 
+            box-sizing: border-box; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; /* Centers everything horizontally */
+            justify-content: center; /* Centers everything vertically */
+        }
+        h1, p { text-align: center; }
+        
+        /* Apply exact same box-sizing and width to all inputs/buttons so they match perfectly */
+        select, input, button { 
+            width: 80%; 
+            max-width: 500px;
+            padding: 15px; 
+            margin: 10px 0; 
+            font-size: 20px; 
+            border-radius: 8px; 
+            border: 1px solid #ccc; 
+            box-sizing: border-box; /* Forces padding to stay inside the width boundary */
+        }
+        button { 
+            color: white; 
+            background: #333; 
+            border: none; 
+            cursor: pointer; 
+        }
+        .skip-btn { background: #888; }
+        #loading { display: none; font-size: 20px; color: #555; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <h1>Welcome to Reptile Hub</h1>
+    <p>Select a Wi-Fi network to get started.</p>
+    
+    <select id="network-list">
+        <option>Scanning for networks...</option>
+    </select>
+    
+    <input type="text" id="password" placeholder="Wi-Fi Password (if required)">
+    
+    <button onclick="connectWifi()">Connect</button>
+    <button class="skip-btn" onclick="skipWifi()">Skip for Now</button>
+    
+    <div id="loading">Connecting... please wait.</div>
+
+    <script>
+        // Scan for networks as soon as the page loads
+        window.onload = async () => {
+            try {
+                const res = await fetch('/api/wifi/scan');
+                const data = await res.json();
+                const select = document.getElementById('network-list');
+                select.innerHTML = '';
+                
+                if(data.networks && data.networks.length > 0) {
+                    data.networks.forEach(net => {
+                        select.innerHTML += `<option value="${net}">${net}</option>`;
+                    });
+                } else {
+                    select.innerHTML = `<option>No networks found.</option>`;
+                }
+            } catch (err) {
+                document.getElementById('network-list').innerHTML = `<option>Error scanning.</option>`;
+            }
+        };
+
+        async function connectWifi() {
+            const ssid = document.getElementById('network-list').value;
+            const password = document.getElementById('password').value;
+            document.getElementById('loading').style.display = 'block';
+            
+            try {
+                const res = await fetch('/api/wifi/connect', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ssid, password})
+                });
+                const data = await res.json();
+                
+                if(data.success) {
+                    // FIX: Explicitly send the user back to the main Hub instead of reloading
+                    window.location.href = '/'; 
+                } else {
+                    alert("Failed to connect: " + (data.error || "Please check the password."));
+                    document.getElementById('loading').style.display = 'none';
+                }
+            } catch(err) {
+                alert("Network error trying to connect.");
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+
+        async function skipWifi() {
+            await fetch('/api/wifi/skip', { method: 'POST' });
+            // FIX: Explicitly send the user back to the main Hub instead of reloading
+            window.location.href = '/'; 
+        }
+    </script>
+    <style>
+    /* Prevents accidental text highlighting while dragging your finger */
+    body { user-select: none; }
+    input, textarea, select { user-select: auto; }
+</style>
+
+<script>
+    // --- FEATURE 1: Prevent Keyboard from hiding inputs ---
+    document.querySelectorAll('input[type="text"], input[type="password"], textarea').forEach(input => {
+        input.addEventListener('focus', () => {
+            setTimeout(() => {
+                input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 300);
+        });
+    });
+
+    // --- FEATURE 2: Touch Drag-to-Scroll ---
+    let isDown = false;
+    let startY;
+    let scrollTop;
+
+    document.body.addEventListener('mousedown', (e) => {
+        isDown = true;
+        startY = e.pageY - document.documentElement.offsetTop;
+        scrollTop = document.documentElement.scrollTop;
+    });
+    document.body.addEventListener('mouseleave', () => { isDown = false; });
+    document.body.addEventListener('mouseup', () => { isDown = false; });
+    document.body.addEventListener('mousemove', (e) => {
+        if (!isDown) return;
+        e.preventDefault(); 
+        const y = e.pageY - document.documentElement.offsetTop;
+        const walk = (y - startY) * 1.5; 
+        document.documentElement.scrollTop = scrollTop - walk;
+    });
+</script>
+</body>
+</html>
