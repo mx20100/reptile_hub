@@ -83,27 +83,27 @@
             background: var(--btn); color: var(--text); border: 1px solid var(--btn-border);
         }
         
-        /* Status Animations */
+        /* Status Animations & Borders */
         @keyframes pulse-red { 
             0% { 
-                border-color: var(--btn-border); 
+                border-color: #ff4c4c; 
                 box-shadow: none;
             } 
             100% { 
                 border-color: #ff0000; /* Pure intense red */
-                /* Outer glow AND inner glow */
                 box-shadow: 0 0 25px #ff0000, inset 0 0 15px rgba(255, 0, 0, 0.3); 
             } 
         }
         
         .needs-feeding { 
             animation: pulse-red 0.4s ease-in-out infinite alternate; 
-            border-width: 4px !important; /* Doubles the border thickness! */
+            border-width: 4px !important; /* Thicker border when hungry */
         }
 
-        .status-critical { border: 2px solid #ff4c4c; }
-        .status-warning { border: 2px solid #ffa500; }
-        .status-good { border: 2px solid #4CAF50; }
+        /* Full borders around the cards based on status */
+        .status-critical { border: 2px solid #ff4c4c; } /* Red */
+        .status-warning { border: 2px solid #ffa500; }  /* Orange */
+        .status-good { border: 2px solid #4CAF50 !important; }     /* Green */
     </style>
 </head>
 <body>
