@@ -29,36 +29,38 @@
             width: 100vw; 
             overflow: hidden; 
             box-sizing: border-box;
+            user-select: none; /* Prevents text highlighting while dragging */
         }
 
-        h1 { 
-            margin: 5px 0; 
-            font-size: 24px; 
-            text-align: center; 
-        }
+        h1 { margin: 5px 0; font-size: 24px; text-align: center; }
         
-        /* Grid for main buttons */
+        /* Grid for main buttons - RESTORED TO 2 COLUMNS */
         #main-view { 
             display: grid; 
             grid-template-columns: 1fr 1fr; 
             gap: 15px; 
-            height: 380px; 
+            margin-top: 15px;
         }
 
-        .animal-btn { 
-            background: var(--btn); 
-            color: var(--text); 
-            border: 2px solid var(--btn-border); 
-            border-radius: 10px; 
-            font-size: 28px; 
-            cursor: pointer; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
+        /* Restored to look like big clickable square cards */
+        .animal-card {
+            background: var(--btn);
+            color: var(--text);
+            border: 2px solid var(--btn-border);
+            border-radius: 12px;
+            padding: 15px 10px;
+            display: flex;
             flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            cursor: pointer;
+            transition: transform 0.1s;
+            min-height: 110px;
         }
+        .animal-card:active { transform: scale(0.98); }
         
-        /* Modals / Screens */
+        /* Modal / Screens - RESTORED SCROLLING */
         .screen { 
             display: none; 
             position: absolute; 
@@ -70,106 +72,38 @@
             padding: 20px; 
             box-sizing: border-box; 
             z-index: 10; 
+            overflow-y: auto; /* This brings scrolling back! */
+            padding-bottom: 80px; 
         }
-
         .active { display: block; }
         
-        .action-btns { 
-            display: grid; 
-            grid-template-columns: 1fr; 
-            gap: 15px; 
-            margin-top: 20px;
-        }
+        .action-btns { display: grid; grid-template-columns: 1fr; gap: 15px; margin-top: 20px; }
         button { 
-            padding: 15px; 
-            font-size: 22px; 
-            border-radius: 8px; 
-            cursor: pointer; 
-            background: var(--btn); 
-            color: var(--text); 
-            border: 1px solid var(--btn-border);
+            padding: 15px; font-size: 22px; border-radius: 8px; cursor: pointer; 
+            background: var(--btn); color: var(--text); border: 1px solid var(--btn-border);
         }
         
-        /* Animations for feeding */
-        @keyframes pulse-red { 
-            0% { 
-                background-color: var(--btn); 
-            } 
-            100% { 
-                background-color: #ff4c4c; 
-                color: white;
-            } 
-        }
+        /* Status Animations */
+        @keyframes pulse-red { 0% { border-color: var(--btn-border); } 100% { border-color: #ff4c4c; box-shadow: 0 0 10px #ff4c4c; } }
+        .needs-feeding { animation: pulse-red 0.8s ease-in-out infinite alternate; }
 
-        @keyframes pulse-white { 
-            0% { 
-                background-color: var(--btn); 
-            } 
-            100% { 
-                background-color: #ffffff; 
-                color: black; 
-            } 
-        }
-        
-        body:not(.dark-theme) .needs-feeding { animation: pulse-red 0.4s ease-in-out infinite alternate; }
-        body.dark-theme .needs-feeding { animation: pulse-white 0.4s ease-in-out infinite alternate; }
-        
-        #settings-btn { 
-            position: absolute;
-            bottom: 10px;
-            right: 10px;
-            font-size: 16px;
-            padding: 10px; 
-        }
-        
-        .close-btn { 
-            background: #ff4c4c; 
-            color: white; 
-            border: none; 
-        }
-        
-        /* Form inputs */
-        input, select { 
-            padding: 10px;
-            font-size: 18px;
-            margin: 5px 0;
-            width: 100%;
-            box-sizing: border-box;
-            background: var(--btn);
-            color: var(--text);
-            border: 1px solid var(--btn-border);
-        }
+        .status-critical { border: 2px solid #ff4c4c; }
+        .status-warning { border: 2px solid #ffa500; }
+        .status-good { border: 2px solid #4CAF50; }
 
-        /* Toast Notification */
-        .toast {
-            position: fixed;
-            top: 20px;
-            right: -400px; /* Hidden off-screen by default */
-            background: #4CAF50; /* Success Green */
-            color: white;
-            padding: 15px 20px;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-            font-size: 18px;
-            transition: right 0.4s ease-in-out;
-            z-index: 10000;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-        .toast.show {
-            right: 20px; /* Slides into view */
-        }
-        .toast.error {
-            background: #f44336; /* Error Red */
-        }
+        #settings-btn { position: absolute; bottom: 10px; right: 10px; font-size: 16px; padding: 10px; z-index: 20; }
+        .close-btn { background: #ff4c4c; color: white; border: none; }
+        
+        input, select { padding: 10px; font-size: 18px; margin: 5px 0; width: 100%; box-sizing: border-box; background: var(--btn); color: var(--text); border: 1px solid var(--btn-border); user-select: auto; }
+
+        /* Toast */
+        .toast { position: fixed; top: 20px; right: -400px; background: #4CAF50; color: white; padding: 15px 20px; border-radius: 8px; transition: right 0.4s; z-index: 10000; display: flex; align-items: center; gap: 12px; }
+        .toast.show { right: 20px; }
+        .toast.error { background: #f44336; }
     </style>
 </head>
 <body>
-    <div id="toast" class="toast">
-        <span id="toast-icon">✅</span>
-        <span id="toast-msg">Action successful!</span>
-    </div>
+    <div id="toast" class="toast"><span id="toast-icon">✅</span><span id="toast-msg">Action successful!</span></div>
 
     <div id="home" class="screen active">
         <h1>Reptile Hub</h1>
@@ -189,137 +123,101 @@
 
     <div id="animal-info" class="screen">
         <h1 id="info-title">Information</h1>
-        <div style="font-size: 24px; line-height: 1.8; margin-top: 20px;" id="info-content"></div>
-        
+        <div style="font-size: 22px; line-height: 1.6; margin-top: 20px;" id="info-content"></div>
         <button class="close-btn" style="position: absolute; bottom: 80px; width: calc(100% - 40px); background: #8b0000;" onclick="deleteAnimal()">Delete Animal</button>
-        
         <button class="close-btn" style="position: absolute; bottom: 20px; width: calc(100% - 40px);" onclick="showScreen('animal-actions')">Back</button>
     </div>
 
-    <div id="settings" class="screen" style="overflow-y: auto; position: relative;">
-        <button onclick="window.location.href='/wifi_setup'" style="position: absolute; top: 10px; right: 10px; padding: 6px 12px; border-radius: 6px; background: var(--btn); border: 1px solid var(--btn-border); color: var(--text); font-size: 14px; cursor: pointer; display: flex; align-items: center; gap: 8px; width: auto; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
-            <span>📶</span>
-            <span id="current-ssid">Checking...</span>
+    <div id="settings" class="screen">
+        <button onclick="window.location.href='/wifi_setup'" style="position: absolute; top: 10px; right: 10px; font-size: 14px; padding: 5px 10px; width: auto;">
+            📶 <span id="current-ssid">...</span>
         </button>
-
         <h1>Settings</h1>
-        <div style="background: var(--btn); border: 1px solid var(--btn-border); padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-            <p style="margin: 0; font-size: 16px; color: var(--text);">Access Hub from any device on your Wi-Fi:</p>
-            <p style="margin: 8px 0 0 0; font-size: 24px; font-weight: bold; color: #4CAF50;" id="pi-ip-address">Loading...</p>
+        <div style="background: var(--btn); border: 1px solid var(--btn-border); padding: 10px; border-radius: 8px; margin-bottom: 20px; text-align: center;">
+            <p style="margin:0;">Hub IP Address:</p>
+            <p style="margin:5px 0 0 0; font-size: 20px; font-weight: bold; color: #4CAF50;" id="pi-ip-address">Loading...</p>
         </div>
-        <button onclick="toggleTheme()" id="theme-btn" style="width: 100%; margin-bottom: 20px;">Toggle Theme</button>
-        
+        <button onclick="toggleTheme()" style="width: 100%; margin-bottom: 20px;">Toggle Theme</button>
         <h3>Add New Animal</h3>
         <input type="text" id="new-name" placeholder="Name">
-        <select id="new-category" onchange="updateSpecies()">
-            <option value="Geckos">Geckos</option>
-            <option value="Lizards">Lizards</option>
-            <option value="Snakes">Snakes</option>
-        </select>
+        <select id="new-category" onchange="updateSpecies()"></select>
         <select id="new-species"></select>
-        <input type="number" id="new-freq" placeholder="Feed Frequency (1-30 Days)" min="1" max="30">
-        <input type="number" id="new-meal" placeholder="Meal Size (grams, Snakes only)" style="display:none;">
-        <button style="width: 100%; background: #4CAF50; color: white; margin-top:10px;" onclick="addAnimal()">Add Animal</button>
-
-        <button class="close-btn" style="width: 100%; margin-top: 20px;" onclick="showScreen('home')">Back to Home</button>
+        <input type="number" id="new-freq" placeholder="Feed Freq (Days)">
+        <button style="width: 100%; background: #4CAF50; color: white;" onclick="addAnimal()">Add Animal</button>
+        <button class="close-btn" style="width: 100%; margin-top: 20px;" onclick="showScreen('home')">Back</button>
     </div>
 
     <script>
         let currentAnimal = null;
-        let animalsData = [];
-        
-        const speciesMap = {
-            "Geckos": ["Leopard Gecko", "Crested Gecko", "Gargoyle Gecko", "Chahoua Gecko"],
-            "Lizards": ["Ackie monitor", "Bearded dragon"],
-            "Snakes": ["Ball Python", "Plains Hognose", "King snake", "Corn snake"]
-        };
+        let speciesCatalog = {};
+
+        async function loadCatalog() {
+            try {
+                const response = await fetch('/api/catalog');
+                speciesCatalog = await response.json();
+                const catSelect = document.getElementById('new-category');
+                catSelect.innerHTML = '';
+                for (const cat in speciesCatalog) {
+                    catSelect.innerHTML += `<option value="${cat}">${cat}</option>`;
+                }
+                updateSpecies();
+            } catch (e) { console.error(e); }
+        }
 
         function updateSpecies() {
             const cat = document.getElementById('new-category').value;
             const specSelect = document.getElementById('new-species');
-            const mealInput = document.getElementById('new-meal');
             specSelect.innerHTML = '';
-            speciesMap[cat].forEach(sp => {
-                specSelect.innerHTML += `<option value="${sp}">${sp}</option>`;
-            });
-            mealInput.style.display = (cat === 'Snakes') ? 'block' : 'none';
+            if (speciesCatalog[cat]) {
+                speciesCatalog[cat].forEach(s => specSelect.innerHTML += `<option value="${s}">${s}</option>`);
+            }
         }
 
-        let toastTimeout;
         function showToast(message, isError = false) {
             const toast = document.getElementById('toast');
-            const msg = document.getElementById('toast-msg');
-            const icon = document.getElementById('toast-icon');
-
-            // Set the text and colors
-            msg.innerText = message;
-            if (isError) {
-                toast.classList.add('error');
-                icon.innerText = '⚠️';
-            } else {
-                toast.classList.remove('error');
-                icon.innerText = '✅';
-            }
-
-            // Slide it in
+            document.getElementById('toast-msg').innerText = message;
+            document.getElementById('toast-icon').innerText = isError ? '⚠️' : '✅';
+            isError ? toast.classList.add('error') : toast.classList.remove('error');
             toast.classList.add('show');
-
-            // Clear any existing timers so it doesn't hide too early if you click fast
-            clearTimeout(toastTimeout);
-
-            // Slide it out after 3 seconds
-            toastTimeout = setTimeout(() => {
-                toast.classList.remove('show');
-            }, 3000);
+            setTimeout(() => toast.classList.remove('show'), 3000);
         }
 
         async function loadData() {
-            const res = await fetch('/api/data');
-            const data = await res.json();
-            animalsData = data.animals;
-            
-            document.body.className = data.theme === 'dark' ? 'dark-theme' : '';
-            
-            const main = document.getElementById('main-view');
-            main.innerHTML = '';
-            animalsData.forEach(a => {
-                const btn = document.createElement('button');
-                btn.className = 'animal-btn' + (a.needs_feeding ? ' needs-feeding' : '');
-                btn.innerHTML = `<strong>${a.name}</strong><span style="font-size:16px;">${a.species}</span>`;
-                btn.onclick = () => { currentAnimal = a; showScreen('animal-actions'); document.getElementById('action-title').innerText = a.name; };
-                main.appendChild(btn);
-            });
-            updateSpecies();
+            try {
+                const response = await fetch('/api/data');
+                const animals = await response.json();
+                const container = document.getElementById('main-view');
+                container.innerHTML = '';
+
+                animals.forEach(animal => {
+                    const status = animal.status || 'good';
+                    const card = document.createElement('div');
+                    card.className = `animal-card status-${status} ${status === 'critical' ? 'needs-feeding' : ''}`;
+                    card.onclick = () => {
+                        currentAnimal = animal;
+                        document.getElementById('action-title').innerText = animal.name;
+                        showScreen('animal-actions');
+                    };
+                    card.innerHTML = `
+                        <div style="font-size: 24px; font-weight: bold;">${animal.name}</div>
+                        <div style="font-size: 14px; margin-bottom: 8px;">${animal.species}</div>
+                        <div style="font-size: 14px; opacity: 0.9;">Next: ${animal.next_fed || 'ASAP'}</div>
+                        <div style="font-size: 12px; opacity: 0.7; margin-top: 4px;">W: ${animal.last_weight || 'No data'}</div>
+                    `;
+                    container.appendChild(card);
+                });
+            } catch (e) { console.error("UI Crash:", e); }
         }
 
         async function showScreen(id) {
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             document.getElementById(id).classList.add('active');
-            
-            if(id === 'home') {
-                loadData();
-            } else if (id === 'settings') {
-                // Fetch the Wi-Fi network name
-                try {
-                    const res = await fetch('/api/wifi/current');
-                    const data = await res.json();
-                    document.getElementById('current-ssid').innerText = data.ssid;
-                } catch(err) {
-                    document.getElementById('current-ssid').innerText = 'Offline';
-                }
-            
-                // NEW: Fetch the IP Address and format it as a clickable link
-                try {
-                    const ipRes = await fetch('/api/ip');
-                    const ipData = await ipRes.json();
-                    if (ipData.ip !== 'Offline' && ipData.ip !== 'Error') {
-                        document.getElementById('pi-ip-address').innerText = "http://" + ipData.ip + ":5000";
-                    } else {
-                        document.getElementById('pi-ip-address').innerText = "Connect to Wi-Fi first";
-                    }
-                } catch(err) {
-                    document.getElementById('pi-ip-address').innerText = "Unavailable";
-                }
+            if(id === 'home') loadData();
+            if(id === 'settings') {
+                const wifi = await (await fetch('/api/wifi/current')).json();
+                document.getElementById('current-ssid').innerText = wifi.ssid;
+                const ip = await (await fetch('/api/ip')).json();
+                document.getElementById('pi-ip-address').innerText = ip.ip;
             }
         }
 
@@ -328,38 +226,31 @@
                 method: 'POST', headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({animal_id: currentAnimal.id, action: action, value: value})
             });
-            showToast('Logged successfully!');
+            showToast('Logged!');
             showScreen('home');
         }
 
         function weighAnimal() {
-            const weight = prompt("Enter weight in grams:");
+            const weight = prompt("Grams:");
             if (weight && !isNaN(weight)) logAction('weighed', parseFloat(weight));
         }
 
         function showInfo() {
             document.getElementById('info-title').innerText = currentAnimal.name + " Info";
-            let html = `Last Fed: ${currentAnimal.last_fed}<br>Next Feed Due: ${currentAnimal.next_fed}<br>Frequency: Every ${currentAnimal.feed_days} days`;
-            if (currentAnimal.category === 'Snakes') html += `<br>Target Meal Size: ${currentAnimal.meal_size}g`;
-            
-            // New Weight Display
-            html += `<br><br>Last Weight: <strong>${currentAnimal.last_weight}</strong><br><span style="font-size: 18px;">(Weighed on: ${currentAnimal.last_weighed_date})</span>`;
-            
+            let html = `
+                <strong>Last Fed:</strong> ${currentAnimal.last_fed}<br>
+                <strong>Next Feed:</strong> ${currentAnimal.next_fed}<br>
+                <strong>Freq:</strong> Every ${currentAnimal.feed_days} days<br>
+                <strong>Weight:</strong> ${currentAnimal.last_weight}<br>
+                <small>(Weighed: ${currentAnimal.last_weighed_date})</small>
+                <hr style="border:0; border-top:1px solid var(--btn-border); margin:15px 0;">
+                <div style="background:var(--btn); border:2px solid #4CAF50; padding:10px; border-radius:10px;">
+                    <strong style="color:#4CAF50;">🍽️ Feeder Recommendation:</strong><br>
+                    <div style="margin-top:5px;">${currentAnimal.feeder_rec}</div>
+                </div>
+            `;
             document.getElementById('info-content').innerHTML = html;
             showScreen('animal-info');
-        }
-
-        // Delete Function
-        async function deleteAnimal() {
-            if(confirm(`Are you sure you want to delete ${currentAnimal.name}? This will permanently erase their logs.`)) {
-                await fetch('/api/animal', { 
-                    method: 'DELETE', 
-                    headers: {'Content-Type': 'application/json'}, 
-                    body: JSON.stringify({id: currentAnimal.id})
-                });
-                showToast(`${currentAnimal.name} has been removed.`);
-                showScreen('home');
-            }
         }
 
         async function addAnimal() {
@@ -368,12 +259,18 @@
                 category: document.getElementById('new-category').value,
                 species: document.getElementById('new-species').value,
                 feed_days: parseInt(document.getElementById('new-freq').value),
-                meal_size: parseInt(document.getElementById('new-meal').value || 0)
             };
-            if(!data.name || isNaN(data.feed_days)) return showToast("Please fill name and frequency.", true);
-            await fetch('/api/animal', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data)});
-            showToast('Animal Added!');
-            loadData();
+            if(!data.name || isNaN(data.feed_days)) return showToast("Check inputs", true);
+            const res = await fetch('/api/add', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data)});
+            if(res.ok) { showToast('Added!'); loadData(); showScreen('home'); }
+        }
+
+        async function deleteAnimal() {
+            if(confirm(`Delete ${currentAnimal.name}?`)) {
+                await fetch(`/api/delete/${currentAnimal.id}`, { method: 'DELETE' });
+                showToast('Deleted');
+                showScreen('home');
+            }
         }
 
         async function toggleTheme() {
@@ -381,85 +278,54 @@
             document.body.className = newTheme === 'dark' ? 'dark-theme' : '';
             await fetch('/api/theme', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({theme: newTheme})});
         }
-        
-        // Auto-refresh the data every 1 hour (3600000 milliseconds)
-        setInterval(() => {
-            // Only update if the user is looking at the main Home screen
-            if (document.getElementById('home').classList.contains('active')) {
-                loadData();
-            }
-        }, 3600000);
 
-        window.onload = loadData;
+        window.onload = () => { loadData(); loadCatalog(); }
+        setInterval(() => { if(document.getElementById('home').classList.contains('active')) loadData(); }, 300000);
     </script>
 
-    <style>
-    /* Prevents text highlighting while dragging, and ensures all screens can scroll */
-    body { user-select: none; }
-    input, textarea, select { user-select: auto; }
-    .screen { overflow-y: auto; padding-bottom: 20px; }
-</style>
-
-<script>
-    // --- FEATURE 1: Prevent Keyboard from hiding inputs ---
-    document.querySelectorAll('input, select').forEach(input => {
-        input.addEventListener('focus', () => {
-            // 1. Find the screen you are currently looking at
-            const activeContainer = document.querySelector('.screen.active') || document.body;
-            
-            // 2. Add 260px of empty space to the bottom so the keyboard doesn't cover content
-            activeContainer.style.paddingBottom = '260px'; 
-            
-            // 3. Scroll the input box to the center of the visible area
-            setTimeout(() => {
-                input.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }, 300);
+    <script>
+        document.querySelectorAll('input, select').forEach(input => {
+            input.addEventListener('focus', () => {
+                const activeContainer = document.querySelector('.screen.active') || document.body;
+                activeContainer.style.paddingBottom = '260px'; 
+                setTimeout(() => { input.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 300);
+            });
+            input.addEventListener('blur', () => {
+                const activeContainer = document.querySelector('.screen.active') || document.body;
+                activeContainer.style.paddingBottom = '80px';
+            });
         });
-        
-        input.addEventListener('blur', () => {
-            // When you tap away from the input, remove the extra padding
-            const activeContainer = document.querySelector('.screen.active') || document.body;
-            activeContainer.style.paddingBottom = '20px';
-        });
-    });
 
-    // --- FEATURE 2: Touch Drag-to-Scroll (Fixed for your app structure) ---
-    let isDown = false;
-    let startY;
-    let scrollTop;
-    let scrollContainer;
+        let isDown = false;
+        let startY;
+        let scrollTop;
+        let scrollContainer;
 
-    // Listens for both mouse drags (X11 emulation) and raw touch drags
-    function startDrag(e) {
-        // Target the specific screen you are on, NOT the locked body
-        scrollContainer = e.target.closest('.screen.active') || document.body;
-        isDown = true;
-        const pageY = e.pageY || e.touches[0].pageY;
-        startY = pageY - scrollContainer.offsetTop;
-        scrollTop = scrollContainer.scrollTop;
-    }
+        function startDrag(e) {
+            scrollContainer = e.target.closest('.screen.active') || document.body;
+            isDown = true;
+            const pageY = e.pageY || e.touches[0].pageY;
+            startY = pageY - scrollContainer.offsetTop;
+            scrollTop = scrollContainer.scrollTop;
+        }
 
-    function stopDrag() { isDown = false; }
+        function stopDrag() { isDown = false; }
 
-    function drag(e) {
-        if (!isDown || !scrollContainer) return;
-        // e.preventDefault(); // (Uncomment if you find the screen accidentally highlighting things)
-        const pageY = e.pageY || e.touches[0].pageY;
-        const y = pageY - scrollContainer.offsetTop;
-        const walk = (y - startY) * 1.5; // Drag speed multiplier
-        scrollContainer.scrollTop = scrollTop - walk;
-    }
+        function drag(e) {
+            if (!isDown || !scrollContainer) return;
+            const pageY = e.pageY || e.touches[0].pageY;
+            const y = pageY - scrollContainer.offsetTop;
+            const walk = (y - startY) * 1.5; 
+            scrollContainer.scrollTop = scrollTop - walk;
+        }
 
-    // Mouse events
-    document.addEventListener('mousedown', startDrag);
-    document.addEventListener('mouseleave', stopDrag);
-    document.addEventListener('mouseup', stopDrag);
-    document.addEventListener('mousemove', drag);
-
-    // Touch events
-    document.addEventListener('touchstart', startDrag, {passive: true});
-    document.addEventListener('touchend', stopDrag);
-    document.addEventListener('touchmove', drag, {passive: true});
-</script>  
+        document.addEventListener('mousedown', startDrag);
+        document.addEventListener('mouseleave', stopDrag);
+        document.addEventListener('mouseup', stopDrag);
+        document.addEventListener('mousemove', drag);
+        document.addEventListener('touchstart', startDrag, {passive: true});
+        document.addEventListener('touchend', stopDrag);
+        document.addEventListener('touchmove', drag, {passive: true});
+    </script>
 </body>
 </html>
