@@ -72,7 +72,7 @@
             padding: 20px; 
             box-sizing: border-box; 
             z-index: 10; 
-            overflow-y: auto; /* This brings scrolling back! */
+            overflow-y: auto;
             padding-bottom: 80px; 
         }
         .active { display: block; }
@@ -84,22 +84,26 @@
         }
         
         /* Status Animations */
-        @keyframes pulse-red { 0% { border-color: var(--btn-border); } 100% { border-color: #ff4c4c; box-shadow: 0 0 10px #ff4c4c; } }
-        .needs-feeding { animation: pulse-red 0.8s ease-in-out infinite alternate; }
+        @keyframes pulse-red { 
+            0% { 
+                border-color: var(--btn-border); 
+                box-shadow: none;
+            } 
+            100% { 
+                border-color: #ff0000; /* Pure intense red */
+                /* Outer glow AND inner glow */
+                box-shadow: 0 0 25px #ff0000, inset 0 0 15px rgba(255, 0, 0, 0.3); 
+            } 
+        }
+        
+        .needs-feeding { 
+            animation: pulse-red 0.4s ease-in-out infinite alternate; 
+            border-width: 4px !important; /* Doubles the border thickness! */
+        }
 
         .status-critical { border: 2px solid #ff4c4c; }
         .status-warning { border: 2px solid #ffa500; }
         .status-good { border: 2px solid #4CAF50; }
-
-        #settings-btn { position: absolute; bottom: 10px; right: 10px; font-size: 16px; padding: 10px; z-index: 20; }
-        .close-btn { background: #ff4c4c; color: white; border: none; }
-        
-        input, select { padding: 10px; font-size: 18px; margin: 5px 0; width: 100%; box-sizing: border-box; background: var(--btn); color: var(--text); border: 1px solid var(--btn-border); user-select: auto; }
-
-        /* Toast */
-        .toast { position: fixed; top: 20px; right: -400px; background: #4CAF50; color: white; padding: 15px 20px; border-radius: 8px; transition: right 0.4s; z-index: 10000; display: flex; align-items: center; gap: 12px; }
-        .toast.show { right: 20px; }
-        .toast.error { background: #f44336; }
     </style>
 </head>
 <body>
