@@ -25,7 +25,7 @@ def get_data():
         # convert sqlite integer to python bool and ensure key exists
         animal['burmating'] = bool(animal.get('burmating', 0))
         
-        # 1. THE MISSING FEEDING LOGIC
+        # Feeding logic
         last_fed_log = conn.execute("SELECT timestamp FROM logs WHERE animal_id=? AND action='fed' ORDER BY timestamp DESC LIMIT 1", (animal['id'],)).fetchone()
         if last_fed_log:
             last_fed_date = datetime.datetime.strptime(last_fed_log['timestamp'], "%Y-%m-%d %H:%M:%S")
@@ -46,7 +46,7 @@ def get_data():
             animal['next_fed'] = "ASAP"
             animal['status'] = "critical"
             
-        # 2. THE WEIGHT & FEEDER REC LOGIC
+        # Weight and feeder recommendation logic
         last_weight = conn.execute("SELECT value, timestamp FROM logs WHERE animal_id=? AND action='weighed' ORDER BY timestamp DESC LIMIT 1", (animal['id'],)).fetchone()
         if last_weight:
             weight_val = last_weight['value']
@@ -125,7 +125,7 @@ def edit_animal(animal_id):
     data = request.json
     conn = get_db()
     
-    # 1. Update the main animal profile (and optionally burmation)
+    # Update the main animal profile (and optionally burmation)
     fields = [data['name'], data['category'], data['species'], data['feed_days']]
     query = '''
         UPDATE animals 
@@ -138,7 +138,7 @@ def edit_animal(animal_id):
     fields.append(animal_id)
     conn.execute(query, fields)
     
-    # 2. Update the most recent weight log
+    # Update the most recent weight log
     new_weight = data.get('last_weight')
     if new_weight and str(new_weight).strip() != "":
         # Find their most recent 'weighed' log

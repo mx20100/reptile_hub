@@ -14,12 +14,12 @@
             box-sizing: border-box; 
             display: flex; 
             flex-direction: column; 
-            align-items: center; /* Centers everything horizontally */
-            justify-content: center; /* Centers everything vertically */
+            align-items: center;
+            justify-content: center;
         }
         h1, p { text-align: center; }
         
-        /* Apply exact same box-sizing and width to all inputs/buttons so they match perfectly */
+        /* Apply exact same box-sizing and width to all inputs/buttons so they match */
         select, input, button { 
             width: 80%; 
             max-width: 500px;
@@ -28,7 +28,7 @@
             font-size: 20px; 
             border-radius: 8px; 
             border: 1px solid #ccc; 
-            box-sizing: border-box; /* Forces padding to stay inside the width boundary */
+            box-sizing: border-box;
         }
         button { 
             color: white; 
@@ -90,7 +90,7 @@
                 const data = await res.json();
                 
                 if(data.success) {
-                    // FIX: Explicitly send the user back to the main Hub instead of reloading
+                    // Send the user back to the main Hub instead of reloading
                     window.location.href = '/'; 
                 } else {
                     alert("Failed to connect: " + (data.error || "Please check the password."));
@@ -104,7 +104,7 @@
 
         async function skipWifi() {
             await fetch('/api/wifi/skip', { method: 'POST' });
-            // FIX: Explicitly send the user back to the main Hub instead of reloading
+            // Send the user back to the main Hub instead of reloading
             window.location.href = '/'; 
         }
     </script>
@@ -115,7 +115,7 @@
 </style>
 
 <script>
-    // --- FEATURE 1: Prevent Keyboard from hiding inputs ---
+    // Prevent Keyboard from hiding inputs
     document.querySelectorAll('input[type="text"], input[type="password"], textarea').forEach(input => {
         input.addEventListener('focus', () => {
             setTimeout(() => {
@@ -124,7 +124,7 @@
         });
     });
 
-    // --- FEATURE 2: Touch Drag-to-Scroll ---
+    // Touch Drag to Scroll
     let isDown = false;
     let startY;
     let scrollTop;

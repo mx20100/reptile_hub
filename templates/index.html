@@ -105,7 +105,7 @@
 
         /* FIXED ON-SCREEN BUTTONS */
         #settings-btn { 
-            position: fixed; /* Locks to the glass */
+            position: fixed;
             bottom: 15px; 
             right: 15px; 
             font-size: 18px; 
@@ -138,7 +138,7 @@
         }
         
         .fixed-back-btn { 
-            position: fixed; /* Locks to the glass */
+            position: fixed;
             bottom: 15px; 
             left: 15px; 
             width: auto !important; 
@@ -160,14 +160,13 @@
             font-size: 18px; 
             padding: 12px 25px; 
             z-index: 100; 
-            background: #2196F3; /* Bright Blue */
+            background: #2196F3;
             color: white; 
             border: none;
             border-radius: 8px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.3);
         }
 
-        /* The switch - the box around the slider */
         .switch {
           position: relative;
           display: inline-block;
@@ -178,7 +177,6 @@
         /* Hide default HTML checkbox */
         .switch input { opacity: 0; width: 0; height: 0; }
 
-        /* The slider */
         .slider {
           position: absolute;
           cursor: pointer;
@@ -203,12 +201,12 @@
 
         /* Form Inputs (Made Huge and Stacked) */
         input, select { 
-            display: block; /* Forces them to stack vertically */
+            display: block;
             padding: 15px; 
-            font-size: 22px; /* Huge text for 4.3" screen */
-            margin: 10px 0 20px 0; /* Spaced out */
+            font-size: 22px;
+            margin: 10px 0 20px 0;
             width: 100%; 
-            height: 60px; /* Fat targets */
+            height: 60px;
             box-sizing: border-box; 
             background: var(--btn); 
             color: var(--text); 
@@ -344,7 +342,7 @@
                 const response = await fetch('/api/data');
                 const data = await response.json();
                 
-                // 1. APPLY THE SAVED THEME IMMEDIATELY
+                // Apply the saved theme
                 const savedTheme = data.theme || 'light';
                 if (savedTheme === 'dark') {
                     document.body.classList.add('dark-theme');
@@ -358,7 +356,7 @@
                     themeBtn.innerHTML = savedTheme === 'dark' ? '☀️ Light' : '🌙 Dark';
                 }
 
-                // 2. DRAW THE ANIMALS (Existing logic)
+                // Draw the animal cards
                 const container = document.getElementById('main-view');
                 container.innerHTML = '';
                 data.animals.forEach(animal => {
@@ -468,7 +466,7 @@
                     document.getElementById('weightChart').parentElement.style.display = 'block';
                 }
 
-                // Draw the new chart!
+                // Draw the new chart
                 weightChartInstance = new Chart(ctx, {
                     type: 'line',
                     data: {
@@ -476,8 +474,8 @@
                         datasets: [{
                             label: 'Weight (grams)',
                             data: data,
-                            borderColor: '#4CAF50', // Green line
-                            backgroundColor: 'rgba(76, 175, 80, 0.2)', // Light green fill
+                            borderColor: '#4CAF50',
+                            backgroundColor: 'rgba(76, 175, 80, 0.2)',
                             borderWidth: 3,
                             pointRadius: 5,
                             pointBackgroundColor: '#fff',
@@ -619,20 +617,20 @@
                 if(res.ok) { 
                     showToast('Changes Saved!'); 
                     
-                    // 1. Refresh Home Screen Data
+                    // Refresh Home Screen Data
                     await loadData(); 
                     
-                    // 2. Fetch fresh data to update currentAnimal reference
+                    // Fetch fresh data to update currentAnimal reference
                     const updatedResponse = await fetch('/api/data');
                     const responseData = await updatedResponse.json();
                     
-                    // OPEN THE BOX: Get the list from the 'animals' key
+                    // Get the list from the 'animals' key
                     const allAnimals = responseData.animals; 
                     
-                    // Re-find our animal in the fresh list
+                    // Re-find the animal in the fresh list
                     currentAnimal = allAnimals.find(a => a.id === currentAnimal.id);
                     
-                    // 3. Return to Info Screen
+                    // Return to Info Screen
                     showInfo(); 
                 } else {
                     showToast('Server Error (500)', true);
@@ -728,13 +726,13 @@
             }
 
             if (isDragging) {
-                // Prevent native browser scrolling so it doesn't fight our custom scroll
+                // Prevent native browser scrolling
                 e.preventDefault(); 
                 scrollContainer.scrollTop = scrollTop - walk;
             }
         }
 
-        // The ultimate click blocker. We ONLY block the click, not the physical touch release.
+        // The ultimate click blocker. Only block the click, not the physical touch release.
         document.addEventListener('click', function(e) {
             if (isDragging) {
                 e.preventDefault();
@@ -748,7 +746,7 @@
         document.addEventListener('mouseup', stopDrag);
         document.addEventListener('mousemove', drag);
 
-        // Note: touchmove MUST have passive: false so we can preventDefault() while dragging
+        // Touchmove must have passive: false so we can preventDefault() while dragging
         document.addEventListener('touchstart', startDrag, {passive: true});
         document.addEventListener('touchend', stopDrag);
         document.addEventListener('touchmove', drag, {passive: false});
