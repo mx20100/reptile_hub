@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Reptile Hub</title>
+    <script src="/static/js/chart.js"></script>
     <style>
         :root { 
             --bg: #f4f4f4; 
@@ -29,12 +30,12 @@
             width: 100vw; 
             overflow: hidden; 
             box-sizing: border-box;
-            user-select: none; /* Prevents text highlighting while dragging */
+            user-select: none;
         }
 
-        h1 { margin: 5px 0; font-size: 24px; text-align: center; }
+        h1 { margin: 5px 0 15px 0; font-size: 26px; text-align: center; }
         
-        /* Grid for main buttons - RESTORED TO 2 COLUMNS */
+        /* Grid for main buttons */
         #main-view { 
             display: grid; 
             grid-template-columns: 1fr 1fr; 
@@ -42,7 +43,6 @@
             margin-top: 15px;
         }
 
-        /* Restored to look like big clickable square cards */
         .animal-card {
             background: var(--btn);
             color: var(--text);
@@ -55,12 +55,17 @@
             align-items: center;
             text-align: center;
             cursor: pointer;
-            transition: transform 0.1s;
             min-height: 110px;
+            /* Force Hardware Acceleration */
+            transform: translateZ(0);
+            will-change: transform, border-color;
         }
-        .animal-card:active { transform: scale(0.98); }
+
+        .animal-card:active { 
+            transform: scale(0.95) translateZ(0);
+        }
         
-        /* Modal / Screens - RESTORED SCROLLING */
+        /* Modal / Screens */
         .screen { 
             display: none; 
             position: absolute; 
@@ -72,38 +77,153 @@
             padding: 20px; 
             box-sizing: border-box; 
             z-index: 10; 
-            overflow-y: auto;
-            padding-bottom: 80px; 
+            overflow-y: auto; 
+            padding-bottom: 100px;
+            -webkit-overflow-scrolling: touch;
         }
         .active { display: block; }
         
         .action-btns { display: grid; grid-template-columns: 1fr; gap: 15px; margin-top: 20px; }
         button { 
             padding: 15px; font-size: 22px; border-radius: 8px; cursor: pointer; 
-            background: var(--btn); color: var(--text); border: 1px solid var(--btn-border);
+            background: var(--btn); color: var(--text); border: 2px solid var(--btn-border);
         }
         
         /* Status Animations & Borders */
         @keyframes pulse-red { 
-            0% { 
-                border-color: #ff4c4c; 
-                box-shadow: none;
-            } 
-            100% { 
-                border-color: #ff0000; /* Pure intense red */
-                box-shadow: 0 0 25px #ff0000, inset 0 0 15px rgba(255, 0, 0, 0.3); 
-            } 
+            0% { border-color: #ff4c4c; box-shadow: none; } 
+            100% { border-color: #ff0000; box-shadow: 0 0 25px #ff0000, inset 0 0 15px rgba(255, 0, 0, 0.3); } 
         }
-        
-        .needs-feeding { 
-            animation: pulse-red 0.4s ease-in-out infinite alternate; 
-            border-width: 4px !important; /* Thicker border when hungry */
+        .needs-feeding { animation: pulse-red 0.4s ease-in-out infinite alternate; border-width: 4px !important; }
+        .status-critical { border: 2px solid #ff4c4c; } 
+        .status-warning { border: 2px solid #ffa500; }  
+        .status-good { border: 2px solid #4CAF50 !important; }     
+        .status-burmating { border: 2px solid #ffa500; } /* steady yellow when burmating */
+
+        #burmation-btn.burmation-on { background: #4CAF50; color: white; }
+        #burmation-btn.burmation-off { background: #ccc; color: #333; }
+
+        /* FIXED ON-SCREEN BUTTONS */
+        #settings-btn { 
+            position: fixed; /* Locks to the glass */
+            bottom: 15px; 
+            right: 15px; 
+            font-size: 18px; 
+            padding: 12px 20px; 
+            z-index: 100; 
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
         }
 
-        /* Full borders around the cards based on status */
-        .status-critical { border: 2px solid #ff4c4c; } /* Red */
-        .status-warning { border: 2px solid #ffa500; }  /* Orange */
-        .status-good { border: 2px solid #4CAF50 !important; }     /* Green */
+        /* Toggle dark mode on or off */
+        #theme-toggle-btn {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-size: 14px;
+            padding: 5px 10px;
+            width: auto !important;
+            border-radius: 6px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            cursor: pointer;
+            transition: all 0.2s;
+            background-color: #333 !important;
+            color: #fff !important;
+            border: 1px solid #111 !important;
+        }
+
+        body.dark-theme #theme-toggle-btn {
+            background-color: #fff !important;
+            color: #333 !important;
+            border: 1px solid #ccc !important;
+        }
+        
+        .fixed-back-btn { 
+            position: fixed; /* Locks to the glass */
+            bottom: 15px; 
+            left: 15px; 
+            width: auto !important; 
+            font-size: 18px; 
+            padding: 12px 25px; 
+            z-index: 100; 
+            background: #ff4c4c; 
+            color: white; 
+            border: none;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+
+        .fixed-edit-btn { 
+            position: fixed; 
+            bottom: 15px; 
+            right: 15px; 
+            width: auto !important; 
+            font-size: 18px; 
+            padding: 12px 25px; 
+            z-index: 100; 
+            background: #2196F3; /* Bright Blue */
+            color: white; 
+            border: none;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+
+        /* The switch - the box around the slider */
+        .switch {
+          position: relative;
+          display: inline-block;
+          width: 60px;
+          height: 34px;
+        }
+
+        /* Hide default HTML checkbox */
+        .switch input { opacity: 0; width: 0; height: 0; }
+
+        /* The slider */
+        .slider {
+          position: absolute;
+          cursor: pointer;
+          top: 0; left: 0; right: 0; bottom: 0;
+          background-color: #ccc;
+          transition: .4s;
+          border-radius: 34px;
+        }
+
+        .slider:before {
+          position: absolute;
+          content: "";
+          height: 26px; width: 26px;
+          left: 4px; bottom: 4px;
+          background-color: white;
+          transition: .4s;
+          border-radius: 50%;
+        }
+
+        input:checked + .slider { background-color: #2196F3; }
+        input:checked + .slider:before { transform: translateX(26px); }
+
+        /* Form Inputs (Made Huge and Stacked) */
+        input, select { 
+            display: block; /* Forces them to stack vertically */
+            padding: 15px; 
+            font-size: 22px; /* Huge text for 4.3" screen */
+            margin: 10px 0 20px 0; /* Spaced out */
+            width: 100%; 
+            height: 60px; /* Fat targets */
+            box-sizing: border-box; 
+            background: var(--btn); 
+            color: var(--text); 
+            border: 2px solid var(--btn-border); 
+            border-radius: 8px;
+            user-select: auto; 
+        }
+
+        .toast { position: fixed; top: 20px; right: -400px; background: #4CAF50; color: white; padding: 15px 20px; border-radius: 8px; transition: right 0.4s; z-index: 10000; display: flex; align-items: center; gap: 12px; }
+        .toast.show { right: 20px; }
+        .toast.error { background: #f44336; }
+
+        body.dragging * {
+            pointer-events: none !important;
+        }
     </style>
 </head>
 <body>
@@ -121,38 +241,71 @@
             <button onclick="logAction('fed')">Animal Fed</button>
             <button onclick="weighAnimal()">Animal Weighed</button>
             <button onclick="showInfo()">Information</button>
-            <button class="close-btn" onclick="showScreen('home')">Back</button>
+            <button id="burmation-btn" class="burmation-off" onclick="toggleBurmation()">Burmation: OFF</button>
         </div>
+        <button class="fixed-back-btn" onclick="showScreen('home')">Back</button>
     </div>
 
     <div id="animal-info" class="screen">
         <h1 id="info-title">Information</h1>
         <div style="font-size: 22px; line-height: 1.6; margin-top: 20px;" id="info-content"></div>
-        <button class="close-btn" style="position: absolute; bottom: 80px; width: calc(100% - 40px); background: #8b0000;" onclick="deleteAnimal()">Delete Animal</button>
-        <button class="close-btn" style="position: absolute; bottom: 20px; width: calc(100% - 40px);" onclick="showScreen('animal-actions')">Back</button>
+
+        <div id="chart-container" style="width: 100%; height: 250px; margin-top: 20px; background: var(--btn); border: 2px solid var(--btn-border); border-radius: 8px; padding: 10px; box-sizing: border-box;">
+            <canvas id="weightChart"></canvas>
+        </div>
+        
+        <button class="fixed-back-btn" onclick="showScreen('animal-actions')">Back</button>
+        <button class="fixed-edit-btn" onclick="openEditScreen()"> Edit</button>
+    </div>
+
+    <div id="edit-animal" class="screen">
+        <h1 style="font-size: 26px;">Edit Animal</h1>
+        
+        <input type="text" id="edit-name" placeholder="Name">
+        <select id="edit-category" onchange="updateEditSpecies()"></select>
+        <select id="edit-species"></select>
+        <input type="number" id="edit-freq" placeholder="Feed Freq (Days)">
+        <input type="number" id="edit-weight" placeholder="Last Weight (g)">
+        <div style="display: flex; align-items: center; justify-content: space-between; background: var(--btn); border: 2px solid var(--btn-border); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+            <span style="font-size: 22px;">In Burmation:</span>
+            <label class="switch">
+                <input type="checkbox" id="edit-burmation">
+                <span class="slider round"></span>
+            </label>
+        </div>
+        <button style="width: 100%; background: #2196F3; color: white; border: none; font-size: 24px; padding: 15px; margin-top: 10px; margin-bottom: 40px; border-radius: 8px;" onclick="saveEdit()">Save Changes</button>
+        <button style="width: 100%; margin-bottom: 20px; background: #8b0000; color: white; border: none; padding: 15px; font-size: 22px; border-radius: 8px;" onclick="deleteAnimal()">Delete Animal</button>
+        
+        <button class="fixed-back-btn" onclick="showScreen('animal-info')">Cancel</button>
     </div>
 
     <div id="settings" class="screen">
         <button onclick="window.location.href='/wifi_setup'" style="position: absolute; top: 10px; right: 10px; font-size: 14px; padding: 5px 10px; width: auto;">
             📶 <span id="current-ssid">...</span>
         </button>
+
+        <button id="theme-toggle-btn" onclick="toggleTheme()">🌙 Dark</button>
+
         <h1>Settings</h1>
-        <div style="background: var(--btn); border: 1px solid var(--btn-border); padding: 10px; border-radius: 8px; margin-bottom: 20px; text-align: center;">
+        <div style="background: var(--btn); border: 2px solid var(--btn-border); padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: center;">
             <p style="margin:0;">Hub IP Address:</p>
-            <p style="margin:5px 0 0 0; font-size: 20px; font-weight: bold; color: #4CAF50;" id="pi-ip-address">Loading...</p>
+            <p style="margin:5px 0 0 0; font-size: 22px; font-weight: bold; color: #4CAF50;" id="pi-ip-address">Loading...</p>
         </div>
-        <button onclick="toggleTheme()" style="width: 100%; margin-bottom: 20px;">Toggle Theme</button>
-        <h3>Add New Animal</h3>
+        
+        <h3 style="margin-bottom: 5px; font-size: 24px;">Add New Animal</h3>
         <input type="text" id="new-name" placeholder="Name">
         <select id="new-category" onchange="updateSpecies()"></select>
         <select id="new-species"></select>
         <input type="number" id="new-freq" placeholder="Feed Freq (Days)">
-        <button style="width: 100%; background: #4CAF50; color: white;" onclick="addAnimal()">Add Animal</button>
-        <button class="close-btn" style="width: 100%; margin-top: 20px;" onclick="showScreen('home')">Back</button>
+        
+        <button style="width: 100%; background: #4CAF50; color: white; border: none; font-size: 24px; padding: 15px; margin-top: 10px; margin-bottom: 40px;" onclick="addAnimal()">Add Animal</button>
+        
+        <button class="fixed-back-btn" onclick="showScreen('home')">Back</button>
     </div>
 
     <script>
         let currentAnimal = null;
+        let weightChartInstance = null;
         let speciesCatalog = {};
 
         async function loadCatalog() {
@@ -189,14 +342,34 @@
         async function loadData() {
             try {
                 const response = await fetch('/api/data');
-                const animals = await response.json();
+                const data = await response.json();
+                
+                // 1. APPLY THE SAVED THEME IMMEDIATELY
+                const savedTheme = data.theme || 'light';
+                if (savedTheme === 'dark') {
+                    document.body.classList.add('dark-theme');
+                } else {
+                    document.body.classList.remove('dark-theme');
+                }
+                
+                // Update the toggle button text to match
+                const themeBtn = document.getElementById('theme-toggle-btn');
+                if (themeBtn) {
+                    themeBtn.innerHTML = savedTheme === 'dark' ? '☀️ Light' : '🌙 Dark';
+                }
+
+                // 2. DRAW THE ANIMALS (Existing logic)
                 const container = document.getElementById('main-view');
                 container.innerHTML = '';
-
-                animals.forEach(animal => {
-                    const status = animal.status || 'good';
+                data.animals.forEach(animal => {
+                    // if burmating override status
+                    let status = animal.status || 'good';
+                    if (animal.burmating) {
+                        status = 'burmating';
+                    }
                     const card = document.createElement('div');
-                    card.className = `animal-card status-${status} ${status === 'critical' ? 'needs-feeding' : ''}`;
+                    const needsFeed = status === 'critical' && !animal.burmating;
+                    card.className = `animal-card status-${status} ${needsFeed ? 'needs-feeding' : ''}`;
                     card.onclick = () => {
                         currentAnimal = animal;
                         document.getElementById('action-title').innerText = animal.name;
@@ -217,11 +390,13 @@
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             document.getElementById(id).classList.add('active');
             if(id === 'home') loadData();
+            if(id === 'animal-actions') updateBurmationButton();
             if(id === 'settings') {
                 const wifi = await (await fetch('/api/wifi/current')).json();
                 document.getElementById('current-ssid').innerText = wifi.ssid;
                 const ip = await (await fetch('/api/ip')).json();
-                document.getElementById('pi-ip-address').innerText = ip.ip;
+                // show host:port if available, fallback to just ip
+                document.getElementById('pi-ip-address').innerText = ip.host || ip.ip;
             }
         }
 
@@ -234,9 +409,110 @@
             showScreen('home');
         }
 
+        function updateBurmationButton() {
+            const btn = document.getElementById('burmation-btn');
+            if (!btn || !currentAnimal) return;
+            if (currentAnimal.burmating) {
+                btn.classList.add('burmation-on');
+                btn.classList.remove('burmation-off');
+                btn.innerText = 'Burmation: ON';
+            } else {
+                btn.classList.add('burmation-off');
+                btn.classList.remove('burmation-on');
+                btn.innerText = 'Burmation: OFF';
+            }
+        }
+
+        async function toggleBurmation() {
+            const newVal = !currentAnimal.burmating;
+            await fetch(`/api/burmation/${currentAnimal.id}`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({burmating: newVal})
+            });
+            currentAnimal.burmating = newVal;
+            updateBurmationButton();
+            showToast(`Burmation ${newVal ? 'enabled' : 'disabled'}`);
+            // refresh main list so card colours update
+            loadData();
+        }
+
         function weighAnimal() {
             const weight = prompt("Grams:");
             if (weight && !isNaN(weight)) logAction('weighed', parseFloat(weight));
+        }
+
+        async function drawWeightChart() {
+            try {
+                // Fetch the history from our new Python route
+                const response = await fetch(`/api/weight_history/${currentAnimal.id}`);
+                const history = await response.json();
+
+                // Extract the dates for the bottom axis, and weights for the line
+                const labels = history.map(log => log.date);
+                const data = history.map(log => log.weight);
+
+                const ctx = document.getElementById('weightChart').getContext('2d');
+                const isDark = document.body.classList.contains('dark-theme');
+
+                // Destroy the old chart if you are clicking on a new animal
+                if (weightChartInstance) {
+                    weightChartInstance.destroy();
+                }
+
+                // If they have no weight logs, don't draw an empty box
+                if (data.length === 0) {
+                    document.getElementById('weightChart').parentElement.style.display = 'none';
+                    return;
+                } else {
+                    document.getElementById('weightChart').parentElement.style.display = 'block';
+                }
+
+                // Draw the new chart!
+                weightChartInstance = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Weight (grams)',
+                            data: data,
+                            borderColor: '#4CAF50', // Green line
+                            backgroundColor: 'rgba(76, 175, 80, 0.2)', // Light green fill
+                            borderWidth: 3,
+                            pointRadius: 5,
+                            pointBackgroundColor: '#fff',
+                            fill: true,
+                            tension: 0.3
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { 
+                                display: true,
+                                labels: { color: isDark ? '#ddd' : '#333'}
+                             },
+                             title: {
+                                text: `${currentAnimal.name}'s Growth Chart`,
+                                color: isDark ? '#fff' : '#111',
+                                font: { size: 16}
+                             }
+                        },
+                        scales: {
+                            y: { 
+                                beginAtZero: false,
+                                ticks: { color: document.body.classList.contains('dark-theme') ? '#ddd' : '#333' }
+                            },
+                            x: {
+                                ticks: { color: document.body.classList.contains('dark-theme') ? '#ddd' : '#333' }
+                            }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error("Error drawing chart:", error);
+            }
         }
 
         function showInfo() {
@@ -246,7 +522,8 @@
                 <strong>Next Feed:</strong> ${currentAnimal.next_fed}<br>
                 <strong>Freq:</strong> Every ${currentAnimal.feed_days} days<br>
                 <strong>Weight:</strong> ${currentAnimal.last_weight}<br>
-                <small>(Weighed: ${currentAnimal.last_weighed_date})</small>
+                <small>(Weighed: ${currentAnimal.last_weighed_date})</small><br>
+                <strong>Burmation:</strong> ${currentAnimal.burmating ? 'Yes' : 'No'}
                 <hr style="border:0; border-top:1px solid var(--btn-border); margin:15px 0;">
                 <div style="background:var(--btn); border:2px solid #4CAF50; padding:10px; border-radius:10px;">
                     <strong style="color:#4CAF50;">🍽️ Feeder Recommendation:</strong><br>
@@ -255,6 +532,7 @@
             `;
             document.getElementById('info-content').innerHTML = html;
             showScreen('animal-info');
+            setTimeout(() => { drawWeightChart();}, 50);
         }
 
         async function addAnimal() {
@@ -265,8 +543,14 @@
                 feed_days: parseInt(document.getElementById('new-freq').value),
             };
             if(!data.name || isNaN(data.feed_days)) return showToast("Check inputs", true);
-            const res = await fetch('/api/add', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data)});
-            if(res.ok) { showToast('Added!'); loadData(); showScreen('home'); }
+            try {
+                const res = await fetch('/api/add', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data)});
+                if(res.ok) { showToast('Added!'); loadData(); showScreen('home'); }
+                else { showToast('Error adding.', true); }
+            } catch(err) {
+                console.error(err);
+                showToast('Network error.', true);
+            }
         }
 
         async function deleteAnimal() {
@@ -277,26 +561,120 @@
             }
         }
 
+        function openEditScreen() {
+            // Fill in the current name and frequency
+            document.getElementById('edit-name').value = currentAnimal.name;
+            document.getElementById('edit-freq').value = currentAnimal.feed_days;
+            
+            // Extract just the numbers from the weight (e.g., turns "45g" into "45")
+            let weightNum = currentAnimal.last_weight ? currentAnimal.last_weight.replace(/[^0-9.]/g, '') : '';
+            document.getElementById('edit-weight').value = weightNum;
+            // set the burmation checkbox
+            document.getElementById('edit-burmation').checked = !!currentAnimal.burmating;
+            
+            // Build the categories dropdown
+            const catSelect = document.getElementById('edit-category');
+            catSelect.innerHTML = '';
+            for (const cat in speciesCatalog) {
+                catSelect.innerHTML += `<option value="${cat}">${cat}</option>`;
+            }
+            // Set it to their current category
+            catSelect.value = currentAnimal.category;
+            
+            // Build the species dropdown
+            updateEditSpecies();
+            document.getElementById('edit-species').value = currentAnimal.species;
+            
+            showScreen('edit-animal');
+        }
+
+        function updateEditSpecies() {
+            const cat = document.getElementById('edit-category').value;
+            const specSelect = document.getElementById('edit-species');
+            specSelect.innerHTML = '';
+            if (speciesCatalog[cat]) {
+                speciesCatalog[cat].forEach(s => specSelect.innerHTML += `<option value="${s}">${s}</option>`);
+            }
+        }
+
+        async function saveEdit() {
+            const data = {
+                name: document.getElementById('edit-name').value,
+                category: document.getElementById('edit-category').value,
+                species: document.getElementById('edit-species').value,
+                feed_days: parseInt(document.getElementById('edit-freq').value),
+                last_weight: document.getElementById('edit-weight').value,
+                burmating: document.getElementById('edit-burmation').checked
+            };
+            
+            if(!data.name || isNaN(data.feed_days)) return showToast("Check inputs", true);
+            
+            try {
+                const res = await fetch(`/api/edit/${currentAnimal.id}`, { 
+                    method: 'POST', 
+                    headers: {'Content-Type': 'application/json'}, 
+                    body: JSON.stringify(data)
+                });
+                
+                if(res.ok) { 
+                    showToast('Changes Saved!'); 
+                    
+                    // 1. Refresh Home Screen Data
+                    await loadData(); 
+                    
+                    // 2. Fetch fresh data to update currentAnimal reference
+                    const updatedResponse = await fetch('/api/data');
+                    const responseData = await updatedResponse.json();
+                    
+                    // OPEN THE BOX: Get the list from the 'animals' key
+                    const allAnimals = responseData.animals; 
+                    
+                    // Re-find our animal in the fresh list
+                    currentAnimal = allAnimals.find(a => a.id === currentAnimal.id);
+                    
+                    // 3. Return to Info Screen
+                    showInfo(); 
+                } else {
+                    showToast('Server Error (500)', true);
+                }
+            } catch (error) {
+                console.error("Critical JS Error:", error);
+                showToast('Network error.', true);
+            }
+        }
+
         async function toggleTheme() {
-            const newTheme = document.body.classList.contains('dark-theme') ? 'light' : 'dark';
+            const isDark = document.body.classList.contains('dark-theme');
+            const newTheme = isDark ? 'light' : 'dark';
             document.body.className = newTheme === 'dark' ? 'dark-theme' : '';
+
+            document.getElementById('theme-toggle-btn').innerHTML = newTheme === 'dark' ? '☀️ Light' : '🌙 Dark';
+
             await fetch('/api/theme', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({theme: newTheme})});
         }
 
-        window.onload = () => { loadData(); loadCatalog(); }
+        window.onload = () => { 
+            loadData(); 
+            loadCatalog();
+            const themeBtn = document.getElementById('theme-toggle-btn');
+            if (themeBtn) {
+                themeBtn.innerHTML = document.body.classList.contains('dark-theme') ? '☀️ Light' : '🌙 Dark';
+            }
+        }
+        
         setInterval(() => { if(document.getElementById('home').classList.contains('active')) loadData(); }, 300000);
     </script>
 
     <script>
-        document.querySelectorAll('input, select').forEach(input => {
+        document.querySelectorAll('input').forEach(input => {
             input.addEventListener('focus', () => {
                 const activeContainer = document.querySelector('.screen.active') || document.body;
-                activeContainer.style.paddingBottom = '260px'; 
-                setTimeout(() => { input.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 300);
+                activeContainer.style.paddingBottom = '400px';
+                setTimeout(() => { input.scrollIntoView({ behavior: 'smooth', block: 'center'}); }, 300);
             });
             input.addEventListener('blur', () => {
                 const activeContainer = document.querySelector('.screen.active') || document.body;
-                activeContainer.style.paddingBottom = '80px';
+                activeContainer.style.paddingBottom = '100px';
             });
         });
 
@@ -304,32 +682,76 @@
         let startY;
         let scrollTop;
         let scrollContainer;
+        let isDragging = false;
 
         function startDrag(e) {
             scrollContainer = e.target.closest('.screen.active') || document.body;
             isDown = true;
-            const pageY = e.pageY || e.touches[0].pageY;
+            isDragging = false;
+
+            // Get exact coordinates whether it's a mouse or a touchscreen
+            const pageY = e.type.includes('touch') ? e.touches[0].pageY : e.pageY;
             startY = pageY - scrollContainer.offsetTop;
             scrollTop = scrollContainer.scrollTop;
         }
 
-        function stopDrag() { isDown = false; }
+        function stopDrag(e) {
+            if (!isDown) return;
+            isDown = false;
 
-        function drag(e) {
-            if (!isDown || !scrollContainer) return;
-            const pageY = e.pageY || e.touches[0].pageY;
-            const y = pageY - scrollContainer.offsetTop;
-            const walk = (y - startY) * 1.5; 
-            scrollContainer.scrollTop = scrollTop - walk;
+            // If we were dragging, keep the shield up just long enough (50ms) 
+            // to absorb the ghost "click" that follows lifting your finger
+            if (isDragging) {
+                setTimeout(() => {
+                    document.body.classList.remove('dragging');
+                    isDragging = false; 
+                }, 50);
+            }
         }
 
+        function drag(e) {
+            if(!isDown || !scrollContainer) return;
+
+            const pageY = e.type.includes('touch') ? e.touches[0].pageY : e.pageY;
+            const y = pageY - scrollContainer.offsetTop;
+            const walk = (y - startY) * 1.5;
+
+            // Detect a drag if the finger moved more than 10 pixels
+            if (!isDragging && Math.abs(walk) > 10) {
+                isDragging = true;
+                document.body.classList.add('dragging'); 
+
+                // Unfocus active inputs so keyboard drops
+                if (document.activeElement && ['INPUT', 'SELECT'].includes(document.activeElement.tagName)) {
+                    document.activeElement.blur();
+                }
+            }
+
+            if (isDragging) {
+                // Prevent native browser scrolling so it doesn't fight our custom scroll
+                e.preventDefault(); 
+                scrollContainer.scrollTop = scrollTop - walk;
+            }
+        }
+
+        // The ultimate click blocker. We ONLY block the click, not the physical touch release.
+        document.addEventListener('click', function(e) {
+            if (isDragging) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+        }, true);
+
+        // Standard listeners
         document.addEventListener('mousedown', startDrag);
         document.addEventListener('mouseleave', stopDrag);
         document.addEventListener('mouseup', stopDrag);
         document.addEventListener('mousemove', drag);
+
+        // Note: touchmove MUST have passive: false so we can preventDefault() while dragging
         document.addEventListener('touchstart', startDrag, {passive: true});
         document.addEventListener('touchend', stopDrag);
-        document.addEventListener('touchmove', drag, {passive: true});
+        document.addEventListener('touchmove', drag, {passive: false});
     </script>
 </body>
 </html>
