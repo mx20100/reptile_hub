@@ -15,7 +15,7 @@ def get_data():
     for row in animals:
         animal = dict(row)
         
-        # 1. THE MISSING FEEDING LOGIC
+        # 1. FEEDING LOGIC
         last_fed_log = conn.execute("SELECT timestamp FROM logs WHERE animal_id=? AND action='fed' ORDER BY timestamp DESC LIMIT 1", (animal['id'],)).fetchone()
         if last_fed_log:
             last_fed_date = datetime.datetime.strptime(last_fed_log['timestamp'], "%Y-%m-%d %H:%M:%S")
@@ -36,7 +36,7 @@ def get_data():
             animal['next_fed'] = "ASAP"
             animal['status'] = "critical"
             
-        # 2. THE WEIGHT & FEEDER REC LOGIC
+        # 2. WEIGHT & FEEDER REC LOGIC
         last_weight = conn.execute("SELECT value, timestamp FROM logs WHERE animal_id=? AND action='weighed' ORDER BY timestamp DESC LIMIT 1", (animal['id'],)).fetchone()
         if last_weight:
             weight_val = last_weight['value']
