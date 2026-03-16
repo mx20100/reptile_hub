@@ -1,13 +1,19 @@
 from flask import Flask, render_template, request, jsonify
 import os
 import subprocess
-from core.database import get_db
+from core.database import init_db
 from core.animal_api import animal_bp
 
 app = Flask(__name__)
 
 # Register the animal module into the main app
 app.register_blueprint(animal_bp)
+
+# make sure the database schema is always initialised.
+# ``if __name__ == '__main__'`` only runs when the module is executed
+# directly (e.g. ``python app.py``).  Under gunicorn the module is imported
+# instead, so we call init_db at import time to guarantee the tables exist.
+init_db()
 
 # --- SYSTEM & NETWORK ROUTES ---
 
@@ -52,24 +58,19 @@ def skip_wifi():
 @app.route('/api/ip', methods=['GET'])
 def get_ip():
     try:
+        # Get the real Network IP (e.g., 192.168.x.x)
         result = subprocess.run(['hostname', '-I'], capture_output=True, text=True)
         ip_address = result.stdout.split()[0] if result.stdout.strip() else 'Offline'
-        return jsonify({'ip': ip_address})
+        
+        # If the browser is accessing it, show the network IP with the port
+        host = f"{ip_address}:5000" if ip_address != 'Offline' else 'Offline'
+        
+        return jsonify({'ip': ip_address, 'host': host})
     except Exception:
-        return jsonify({'ip': 'Error'})
+        return jsonify({'ip': 'Error', 'host': ''})
 
 if __name__ == '__main__':
-    # Initialize the database file if it doesn't exist
-    conn = get_db()
-    conn.execute('''CREATE TABLE IF NOT EXISTS animals (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        name TEXT, species TEXT, category TEXT,
-                        feed_days INTEGER)''')
-    conn.execute('''CREATE TABLE IF NOT EXISTS logs (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        animal_id INTEGER, action TEXT, value TEXT,
-                        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP)''')
-    conn.commit()
-    conn.close()
-    
+    # ensure the database schema is up to date before starting
+    init_db()
+
     app.run(host='0.0.0.0', port=5000)
