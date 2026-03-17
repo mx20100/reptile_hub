@@ -3,11 +3,13 @@ import os
 import subprocess
 from core.database import init_db
 from core.animal_api import animal_bp
+from core.updater import update_bp
 
 app = Flask(__name__)
 
-# Register the animal module into the main app
+# Register modules into the main app
 app.register_blueprint(animal_bp)
+app.register_blueprint(update_bp)
 
 # make sure the database schema is always initialised.
 # ``if __name__ == '__main__'`` only runs when the module is executed

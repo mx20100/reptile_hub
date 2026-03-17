@@ -290,6 +290,13 @@
             <p style="margin:5px 0 0 0; font-size: 22px; font-weight: bold; color: #4CAF50;" id="pi-ip-address">Loading...</p>
         </div>
         
+        <div style="background: var(--btn); border: 2px solid var(--btn-border); padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: center;">
+            <p style="margin:0 0 10px 0; font-size: 18px;">Software Updates</p>
+            <p style="margin:0 0 10px 0; font-size: 14px; opacity: 0.7;" id="update-status">Not checked yet.</p>
+            <button id="check-update-btn" onclick="checkForUpdates()" style="width: 100%; background: #2196F3; color: white; border: none; font-size: 20px; padding: 12px; border-radius: 8px;">Check for Updates</button>
+            <button id="apply-update-btn" onclick="applyUpdate()" style="width: 100%; background: #4CAF50; color: white; border: none; font-size: 20px; padding: 12px; border-radius: 8px; margin-top: 10px; display: none;">Install Update</button>
+        </div>
+
         <h3 style="margin-bottom: 5px; font-size: 24px;">Add New Animal</h3>
         <input type="text" id="new-name" placeholder="Name">
         <select id="new-category" onchange="updateSpecies()"></select>
@@ -651,8 +658,56 @@
             await fetch('/api/theme', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({theme: newTheme})});
         }
 
-        window.onload = () => { 
-            loadData(); 
+        async function checkForUpdates() {
+            const statusEl = document.getElementById('update-status');
+            const applyBtn = document.getElementById('apply-update-btn');
+            const checkBtn = document.getElementById('check-update-btn');
+            statusEl.innerText = 'Checking...';
+            checkBtn.disabled = true;
+            try {
+                const res = await fetch('/api/update/check');
+                const data = await res.json();
+                if (data.error) {
+                    statusEl.innerText = 'Error: ' + data.error;
+                } else if (data.update_available) {
+                    statusEl.innerText = `Update available! (Local: ${data.local}, Latest: ${data.remote})`;
+                    applyBtn.style.display = 'block';
+                } else {
+                    statusEl.innerText = `You are up to date. (${data.local})`;
+                    applyBtn.style.display = 'none';
+                }
+            } catch (e) {
+                statusEl.innerText = 'Could not reach server.';
+            }
+            checkBtn.disabled = false;
+        }
+
+        async function applyUpdate() {
+            if (!confirm('Install the update now? The app will restart.')) return;
+            const statusEl = document.getElementById('update-status');
+            statusEl.innerText = 'Updating... please wait.';
+            document.getElementById('apply-update-btn').disabled = true;
+            try {
+                const res = await fetch('/api/update/apply', { method: 'POST' });
+                const data = await res.json();
+                if (data.success) {
+                    statusEl.innerText = 'Update installed! Restarting...';
+                    showToast('Update installed! Page will reload.');
+                    setTimeout(() => window.location.reload(), 5000);
+                } else {
+                    statusEl.innerText = 'Update failed: ' + (data.error || 'Unknown error');
+                    showToast('Update failed.', true);
+                }
+            } catch (e) {
+                statusEl.innerText = 'Lost connection (service may be restarting).';
+                showToast('Service restarting... reloading soon.');
+                setTimeout(() => window.location.reload(), 5000);
+            }
+            document.getElementById('apply-update-btn').disabled = false;
+        }
+
+        window.onload = () => {
+            loadData();
             loadCatalog();
             const themeBtn = document.getElementById('theme-toggle-btn');
             if (themeBtn) {

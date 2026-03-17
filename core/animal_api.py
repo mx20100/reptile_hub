@@ -34,11 +34,10 @@ def get_data():
             animal['next_fed'] = next_fed_date.strftime("%Y-%m-%d")
             
             # Calculate color status based on overdue days
+            # critical (red) = feeding day or overdue, good (green) = not yet due
             days_overdue = (datetime.datetime.now() - next_fed_date).days
-            if days_overdue > 0:
+            if days_overdue >= 0:
                 animal['status'] = "critical"
-            elif days_overdue == 0:
-                animal['status'] = "warning"
             else:
                 animal['status'] = "good"
         else:
