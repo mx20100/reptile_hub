@@ -11,7 +11,5 @@ echo "[update] Pulling latest code..."
 git fetch origin main
 git reset --hard origin/main
 
-echo "[update] Restarting reptilehub service..."
-systemctl restart reptilehub
-
-echo "[update] Done."
+echo "[update] Rebooting Pi..."
+reboot
