@@ -3,13 +3,15 @@ from modules.snakes import ball_python, plains_hognose
 from modules.geckos import leopard_gecko
 from modules.snakes import ball_python
 from modules.lizards import bearded_dragon
+from modules.geckos import crested_gecko
 
 # 2. Register any new animals here.
 ANIMAL_MODULES = {
     plains_hognose.SPECIES_NAME: plains_hognose,
     leopard_gecko.SPECIES_NAME: leopard_gecko,
     ball_python.SPECIES_NAME: ball_python,
-    bearded_dragon.SPECIES_NAME: bearded_dragon
+    bearded_dragon.SPECIES_NAME: bearded_dragon,
+    crested_gecko.SPECIES_NAME: crested_gecko
 }
 
 def calculate_feeder(species_name, weight):
