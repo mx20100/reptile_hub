@@ -30,12 +30,12 @@ def get_data():
         if last_fed_log:
             last_fed_date = datetime.datetime.strptime(last_fed_log['timestamp'], "%Y-%m-%d %H:%M:%S")
             animal['last_fed'] = last_fed_date.strftime("%Y-%m-%d")
-            next_fed_date = last_fed_date + datetime.timedelta(days=animal['feed_days'])
+            next_fed_date = last_fed_date.date() + datetime.timedelta(days=animal['feed_days'])
             animal['next_fed'] = next_fed_date.strftime("%Y-%m-%d")
-            
-            # Calculate color status based on overdue days
+
+            # Calculate color status based on overdue days (date-only, ignores time of day)
             # critical (red) = feeding day or overdue, good (green) = not yet due
-            days_overdue = (datetime.datetime.now() - next_fed_date).days
+            days_overdue = (datetime.date.today() - next_fed_date).days
             if days_overdue >= 0:
                 animal['status'] = "critical"
             else:

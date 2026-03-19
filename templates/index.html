@@ -278,9 +278,14 @@
     </div>
 
     <div id="settings" class="screen">
-        <button onclick="window.location.href='/wifi_setup'" style="position: absolute; top: 10px; right: 10px; font-size: 14px; padding: 5px 10px; width: auto;">
-            📶 <span id="current-ssid">...</span>
-        </button>
+        <div style="position: absolute; top: 10px; right: 10px; display: flex; gap: 8px; align-items: center;">
+            <button onclick="showScreen('timezone-picker')" style="font-size: 14px; padding: 5px 10px; width: auto; border-radius: 6px;">
+                🕐 <span id="current-time">--:--</span>
+            </button>
+            <button onclick="window.location.href='/wifi_setup'" style="font-size: 14px; padding: 5px 10px; width: auto; border-radius: 6px;">
+                📶 <span id="current-ssid">...</span>
+            </button>
+        </div>
 
         <button id="theme-toggle-btn" onclick="toggleTheme()">🌙 Dark</button>
 
@@ -308,10 +313,18 @@
         <button class="fixed-back-btn" onclick="showScreen('home')">Back</button>
     </div>
 
+    <div id="timezone-picker" class="screen">
+        <h1>Select Timezone</h1>
+        <p style="text-align: center; opacity: 0.7; font-size: 16px;">Current: <span id="tz-current">...</span></p>
+        <div id="timezone-list" style="margin-top: 15px;"></div>
+        <button class="fixed-back-btn" onclick="showScreen('settings')">Back</button>
+    </div>
+
     <script>
         let currentAnimal = null;
         let weightChartInstance = null;
         let speciesCatalog = {};
+        let piTimezone = 'UTC';
 
         async function loadCatalog() {
             try {
@@ -396,6 +409,7 @@
             document.getElementById(id).classList.add('active');
             if(id === 'home') loadData();
             if(id === 'animal-actions') updateBurmationButton();
+            if(id === 'timezone-picker') buildTimezoneList();
             if(id === 'settings') {
                 const wifi = await (await fetch('/api/wifi/current')).json();
                 document.getElementById('current-ssid').innerText = wifi.ssid;
@@ -691,30 +705,113 @@
                 const res = await fetch('/api/update/apply', { method: 'POST' });
                 const data = await res.json();
                 if (data.success) {
-                    statusEl.innerText = 'Update installed! Restarting...';
-                    showToast('Update installed! Page will reload.');
-                    setTimeout(() => window.location.reload(), 5000);
+                    statusEl.innerText = 'Update installed! Rebooting...';
+                    showToast('Pi is rebooting...');
+                    setTimeout(() => window.location.reload(), 30000);
                 } else {
                     statusEl.innerText = 'Update failed: ' + (data.error || 'Unknown error');
                     showToast('Update failed.', true);
                 }
             } catch (e) {
-                statusEl.innerText = 'Lost connection (service may be restarting).';
-                showToast('Service restarting... reloading soon.');
-                setTimeout(() => window.location.reload(), 5000);
+                statusEl.innerText = 'Rebooting... page will reload shortly.';
+                showToast('Pi is rebooting...');
+                setTimeout(() => window.location.reload(), 30000);
             }
             document.getElementById('apply-update-btn').disabled = false;
+        }
+
+        // --- TIMEZONE ---
+
+        const TIMEZONE_LIST = {
+            "Pacific": ["Pacific/Auckland", "Pacific/Fiji", "Pacific/Honolulu"],
+            "Australia": ["Australia/Sydney", "Australia/Melbourne", "Australia/Brisbane", "Australia/Adelaide", "Australia/Perth"],
+            "Asia": ["Asia/Tokyo", "Asia/Seoul", "Asia/Shanghai", "Asia/Hong_Kong", "Asia/Singapore", "Asia/Bangkok", "Asia/Kolkata", "Asia/Dubai", "Asia/Riyadh"],
+            "Europe": ["Europe/Moscow", "Europe/Istanbul", "Europe/Athens", "Europe/Helsinki", "Europe/Berlin", "Europe/Amsterdam", "Europe/Paris", "Europe/London", "Europe/Lisbon"],
+            "Africa": ["Africa/Cairo", "Africa/Johannesburg", "Africa/Lagos", "Africa/Nairobi"],
+            "Americas": ["America/Sao_Paulo", "America/Buenos_Aires", "America/New_York", "America/Toronto", "America/Chicago", "America/Denver", "America/Los_Angeles", "America/Vancouver", "America/Anchorage"]
+        };
+
+        async function loadTimezone() {
+            try {
+                const res = await fetch('/api/timezone');
+                const data = await res.json();
+                piTimezone = data.timezone || 'UTC';
+            } catch (e) { piTimezone = 'UTC'; }
+            updateClock();
+        }
+
+        function updateClock() {
+            try {
+                const now = new Date();
+                const timeStr = now.toLocaleTimeString('en-GB', { timeZone: piTimezone, hour: '2-digit', minute: '2-digit' });
+                const el = document.getElementById('current-time');
+                if (el) el.innerText = timeStr;
+            } catch (e) { /* timezone not supported in this browser */ }
+        }
+
+        function buildTimezoneList() {
+            const container = document.getElementById('timezone-list');
+            container.innerHTML = '';
+            document.getElementById('tz-current').innerText = piTimezone;
+
+            for (const [region, zones] of Object.entries(TIMEZONE_LIST)) {
+                const header = document.createElement('h3');
+                header.style.cssText = 'margin: 20px 0 10px 0; font-size: 20px;';
+                header.textContent = region;
+                container.appendChild(header);
+
+                zones.forEach(tz => {
+                    const btn = document.createElement('button');
+                    btn.style.cssText = 'width: 100%; margin-bottom: 8px; text-align: left; font-size: 18px;';
+                    if (tz === piTimezone) {
+                        btn.style.borderColor = '#4CAF50';
+                        btn.style.borderWidth = '3px';
+                    }
+                    const friendly = tz.replace(/_/g, ' ').split('/').pop();
+                    let offset = '';
+                    try {
+                        offset = new Date().toLocaleTimeString('en-US', { timeZone: tz, timeZoneName: 'short' }).split(' ').pop();
+                    } catch (e) {}
+                    btn.innerHTML = friendly + ' <span style="opacity: 0.5; font-size: 14px;">(' + offset + ')</span>';
+                    btn.onclick = () => setTimezone(tz);
+                    container.appendChild(btn);
+                });
+            }
+        }
+
+        async function setTimezone(tz) {
+            try {
+                const res = await fetch('/api/timezone', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ timezone: tz })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    piTimezone = tz;
+                    updateClock();
+                    showToast('Timezone updated!');
+                    showScreen('settings');
+                } else {
+                    showToast('Error: ' + (data.error || 'Failed'), true);
+                }
+            } catch (e) {
+                showToast('Network error', true);
+            }
         }
 
         window.onload = () => {
             loadData();
             loadCatalog();
+            loadTimezone();
             const themeBtn = document.getElementById('theme-toggle-btn');
             if (themeBtn) {
                 themeBtn.innerHTML = document.body.classList.contains('dark-theme') ? '☀️ Light' : '🌙 Dark';
             }
         }
         
+        // Update the clock every second and refresh animal data every 5 minutes
+        setInterval(updateClock, 1000);
         setInterval(() => { if(document.getElementById('home').classList.contains('active')) loadData(); }, 300000);
     </script>
 

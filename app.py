@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, jsonify
 import os
+import re
 import subprocess
 from core.database import init_db
 from core.animal_api import animal_bp
@@ -70,6 +71,35 @@ def get_ip():
         return jsonify({'ip': ip_address, 'host': host})
     except Exception:
         return jsonify({'ip': 'Error', 'host': ''})
+
+@app.route('/api/timezone', methods=['GET'])
+def get_timezone():
+    """Return the Pi's current system timezone."""
+    try:
+        with open('/etc/timezone', 'r') as f:
+            tz = f.read().strip()
+    except Exception:
+        tz = 'UTC'
+    return jsonify({'timezone': tz})
+
+@app.route('/api/timezone', methods=['POST'])
+def set_timezone():
+    """Set the Pi's system timezone via timedatectl."""
+    data = request.json
+    tz = data.get('timezone', 'UTC')
+    # Only allow valid timezone characters
+    if not re.match(r'^[A-Za-z0-9/_+-]+$', tz):
+        return jsonify({'success': False, 'error': 'Invalid timezone'}), 400
+    try:
+        result = subprocess.run(
+            ['sudo', 'timedatectl', 'set-timezone', tz],
+            capture_output=True, text=True, timeout=10
+        )
+        if result.returncode != 0:
+            return jsonify({'success': False, 'error': result.stderr.strip()}), 500
+        return jsonify({'success': True, 'timezone': tz})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 if __name__ == '__main__':
     # ensure the database schema is up to date before starting
