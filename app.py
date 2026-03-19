@@ -37,6 +37,10 @@ def index():
         return render_template('wifi_setup.html')
     return render_template('index.html')
 
+@app.route('/wifi_setup')
+def wifi_setup():
+    return render_template('wifi_setup.html')
+
 @app.route('/api/wifi/current', methods=['GET'])
 def current_wifi():
     try:
