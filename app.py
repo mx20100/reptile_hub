@@ -2,7 +2,7 @@ from flask import Flask, render_template, request, jsonify
 import os
 import re
 import subprocess
-from core.database import init_db
+from core.database import init_db, get_db
 from core.animal_api import animal_bp
 from core.updater import update_bp
 
@@ -17,6 +17,17 @@ app.register_blueprint(update_bp)
 # directly (e.g. ``python app.py``).  Under gunicorn the module is imported
 # instead, so we call init_db at import time to guarantee the tables exist.
 init_db()
+
+# Re-apply the user's saved timezone on every startup so reboots don't reset it
+try:
+    _conn = get_db()
+    _tz_row = _conn.execute("SELECT value FROM settings WHERE name='timezone'").fetchone()
+    _conn.close()
+    if _tz_row:
+        subprocess.run(['sudo', 'timedatectl', 'set-timezone', _tz_row['value']],
+                       capture_output=True, text=True, timeout=10)
+except Exception:
+    pass
 
 # --- SYSTEM & NETWORK ROUTES ---
 
@@ -72,9 +83,26 @@ def get_ip():
     except Exception:
         return jsonify({'ip': 'Error', 'host': ''})
 
+def _apply_timezone(tz):
+    """Write timezone to the database and apply it to the system via timedatectl."""
+    # Persist in DB so it survives reboots even if timedatectl fails
+    conn = get_db()
+    conn.execute("INSERT OR REPLACE INTO settings (name, value) VALUES ('timezone', ?)", (tz,))
+    conn.commit()
+    conn.close()
+    # Best-effort apply to the system (requires sudoers entry on Pi)
+    subprocess.run(['sudo', 'timedatectl', 'set-timezone', tz],
+                   capture_output=True, text=True, timeout=10)
+
+
 @app.route('/api/timezone', methods=['GET'])
 def get_timezone():
-    """Return the Pi's current system timezone."""
+    """Return the current timezone (DB value takes priority over /etc/timezone)."""
+    conn = get_db()
+    row = conn.execute("SELECT value FROM settings WHERE name='timezone'").fetchone()
+    conn.close()
+    if row:
+        return jsonify({'timezone': row['value']})
     try:
         with open('/etc/timezone', 'r') as f:
             tz = f.read().strip()
@@ -82,21 +110,16 @@ def get_timezone():
         tz = 'UTC'
     return jsonify({'timezone': tz})
 
+
 @app.route('/api/timezone', methods=['POST'])
 def set_timezone():
-    """Set the Pi's system timezone via timedatectl."""
+    """Set the Pi's system timezone and save it to the database."""
     data = request.json
     tz = data.get('timezone', 'UTC')
-    # Only allow valid timezone characters
     if not re.match(r'^[A-Za-z0-9/_+-]+$', tz):
         return jsonify({'success': False, 'error': 'Invalid timezone'}), 400
     try:
-        result = subprocess.run(
-            ['sudo', 'timedatectl', 'set-timezone', tz],
-            capture_output=True, text=True, timeout=10
-        )
-        if result.returncode != 0:
-            return jsonify({'success': False, 'error': result.stderr.strip()}), 500
+        _apply_timezone(tz)
         return jsonify({'success': True, 'timezone': tz})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
