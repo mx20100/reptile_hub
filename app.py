@@ -41,6 +41,29 @@ def index():
 def wifi_setup():
     return render_template('wifi_setup.html')
 
+@app.route('/api/wifi/scan', methods=['GET'])
+def scan_wifi():
+    """Scan for nearby Wi-Fi networks using NetworkManager."""
+    try:
+        # Trigger a fresh scan first (best-effort, may require root)
+        subprocess.run(['sudo', 'nmcli', 'dev', 'wifi', 'rescan'],
+                       capture_output=True, text=True, timeout=10)
+        # List available networks
+        result = subprocess.run(
+            ['nmcli', '-t', '-f', 'SSID', 'dev', 'wifi', 'list'],
+            capture_output=True, text=True, timeout=10
+        )
+        seen = set()
+        networks = []
+        for line in result.stdout.strip().splitlines():
+            ssid = line.strip()
+            if ssid and ssid not in seen:
+                seen.add(ssid)
+                networks.append(ssid)
+        return jsonify({'networks': sorted(networks)})
+    except Exception as e:
+        return jsonify({'networks': [], 'error': str(e)})
+
 @app.route('/api/wifi/current', methods=['GET'])
 def current_wifi():
     try:
@@ -53,19 +76,22 @@ def current_wifi():
 @app.route('/api/wifi/connect', methods=['POST'])
 def connect_wifi():
     data = request.json
-    ssid = data.get('ssid')
-    password = data.get('password')
-    
-    # Create the NetworkManager profile securely
-    command = f"sudo nmcli dev wifi connect '{ssid}' password '{password}'"
-    result = subprocess.run(command, shell=True, capture_output=True, text=True)
-    
+    ssid = data.get('ssid', '')
+    password = data.get('password', '')
+
+    # Build the command as a list to avoid shell injection
+    cmd = ['sudo', 'nmcli', 'dev', 'wifi', 'connect', ssid]
+    if password:
+        cmd += ['password', password]
+
+    result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+
     if "successfully activated" in result.stdout:
         with open('setup_complete.txt', 'w') as f:
             f.write('done')
         return jsonify({'success': True})
     else:
-        return jsonify({'success': False, 'error': result.stderr})
+        return jsonify({'success': False, 'error': result.stderr or 'Connection failed'})
 
 @app.route('/api/wifi/skip', methods=['POST'])
 def skip_wifi():
