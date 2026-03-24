@@ -1014,10 +1014,6 @@
         // Only active on touchscreen devices — desktop/VNC sessions
         // use a fine pointer and will use their own system keyboard.
         // =========================================================
-        // pointer:coarse is unreliable on Pi's DSI touchscreen (Chromium reports it as fine).
-        // navigator.maxTouchPoints is the reliable signal on Linux/Chromium — it's > 0
-        // on the Pi touchscreen and 0 on a desktop mouse session.
-        const OSK_ENABLED = navigator.maxTouchPoints > 0 || ('ontouchstart' in window);
 
         let oskTarget  = null;
         let oskShiftOn = false;
@@ -1027,7 +1023,6 @@
         const numpadPanel = osk.querySelector('.osk-numpad');
 
         function showKeyboard(inputEl) {
-            if (!OSK_ENABLED) return;
             oskTarget = inputEl;
             const isNumber = inputEl.type === 'number';
             qwertyPanel.classList.toggle('osk-panel-active', !isNumber);
