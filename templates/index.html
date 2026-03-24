@@ -333,6 +333,39 @@
 <body>
     <div id="toast" class="toast"><span id="toast-icon">✅</span><span id="toast-msg">Action successful!</span></div>
 
+    <!-- ===== ON-SCREEN KEYBOARD ===== -->
+    <div id="osk" aria-hidden="true">
+        <div class="osk-qwerty">
+            <div class="osk-row">
+                <div class="osk-key" data-char="q">q</div><div class="osk-key" data-char="w">w</div><div class="osk-key" data-char="e">e</div><div class="osk-key" data-char="r">r</div><div class="osk-key" data-char="t">t</div><div class="osk-key" data-char="y">y</div><div class="osk-key" data-char="u">u</div><div class="osk-key" data-char="i">i</div><div class="osk-key" data-char="o">o</div><div class="osk-key" data-char="p">p</div>
+            </div>
+            <div class="osk-row">
+                <div class="osk-key" data-char="a">a</div><div class="osk-key" data-char="s">s</div><div class="osk-key" data-char="d">d</div><div class="osk-key" data-char="f">f</div><div class="osk-key" data-char="g">g</div><div class="osk-key" data-char="h">h</div><div class="osk-key" data-char="j">j</div><div class="osk-key" data-char="k">k</div><div class="osk-key" data-char="l">l</div>
+            </div>
+            <div class="osk-row">
+                <div class="osk-key" data-action="shift">⇧</div><div class="osk-key" data-char="z">z</div><div class="osk-key" data-char="x">x</div><div class="osk-key" data-char="c">c</div><div class="osk-key" data-char="v">v</div><div class="osk-key" data-char="b">b</div><div class="osk-key" data-char="n">n</div><div class="osk-key" data-char="m">m</div><div class="osk-key" data-action="backspace">⌫</div>
+            </div>
+            <div class="osk-row">
+                <div class="osk-key" data-char="-">-</div><div class="osk-key" data-char="'">'</div><div class="osk-key" data-action="space">space</div><div class="osk-key" data-char=".">.</div><div class="osk-key" data-action="done">Done</div>
+            </div>
+        </div>
+        <div class="osk-numpad">
+            <div class="osk-row">
+                <div class="osk-key" data-char="7">7</div><div class="osk-key" data-char="8">8</div><div class="osk-key" data-char="9">9</div>
+            </div>
+            <div class="osk-row">
+                <div class="osk-key" data-char="4">4</div><div class="osk-key" data-char="5">5</div><div class="osk-key" data-char="6">6</div>
+            </div>
+            <div class="osk-row">
+                <div class="osk-key" data-char="1">1</div><div class="osk-key" data-char="2">2</div><div class="osk-key" data-char="3">3</div>
+            </div>
+            <div class="osk-row">
+                <div class="osk-key" data-action="backspace">⌫</div><div class="osk-key" data-char="0">0</div><div class="osk-key" data-action="done">Done</div>
+            </div>
+        </div>
+    </div>
+    <!-- ===== END ON-SCREEN KEYBOARD ===== -->
+
     <!-- Feeding attempt result modal -->
     <div id="feeding-modal">
         <div class="feeding-modal-box">
@@ -1188,37 +1221,6 @@
         document.addEventListener('touchmove', drag, {passive: false});
     </script>
 
-    <!-- ===== ON-SCREEN KEYBOARD ===== -->
-    <div id="osk" aria-hidden="true">
-        <div class="osk-qwerty">
-            <div class="osk-row">
-                <div class="osk-key" data-char="q">q</div><div class="osk-key" data-char="w">w</div><div class="osk-key" data-char="e">e</div><div class="osk-key" data-char="r">r</div><div class="osk-key" data-char="t">t</div><div class="osk-key" data-char="y">y</div><div class="osk-key" data-char="u">u</div><div class="osk-key" data-char="i">i</div><div class="osk-key" data-char="o">o</div><div class="osk-key" data-char="p">p</div>
-            </div>
-            <div class="osk-row">
-                <div class="osk-key" data-char="a">a</div><div class="osk-key" data-char="s">s</div><div class="osk-key" data-char="d">d</div><div class="osk-key" data-char="f">f</div><div class="osk-key" data-char="g">g</div><div class="osk-key" data-char="h">h</div><div class="osk-key" data-char="j">j</div><div class="osk-key" data-char="k">k</div><div class="osk-key" data-char="l">l</div>
-            </div>
-            <div class="osk-row">
-                <div class="osk-key" data-action="shift">⇧</div><div class="osk-key" data-char="z">z</div><div class="osk-key" data-char="x">x</div><div class="osk-key" data-char="c">c</div><div class="osk-key" data-char="v">v</div><div class="osk-key" data-char="b">b</div><div class="osk-key" data-char="n">n</div><div class="osk-key" data-char="m">m</div><div class="osk-key" data-action="backspace">⌫</div>
-            </div>
-            <div class="osk-row">
-                <div class="osk-key" data-char="-">-</div><div class="osk-key" data-char="'">'</div><div class="osk-key" data-action="space">space</div><div class="osk-key" data-char=".">.</div><div class="osk-key" data-action="done">Done</div>
-            </div>
-        </div>
-        <div class="osk-numpad">
-            <div class="osk-row">
-                <div class="osk-key" data-char="7">7</div><div class="osk-key" data-char="8">8</div><div class="osk-key" data-char="9">9</div>
-            </div>
-            <div class="osk-row">
-                <div class="osk-key" data-char="4">4</div><div class="osk-key" data-char="5">5</div><div class="osk-key" data-char="6">6</div>
-            </div>
-            <div class="osk-row">
-                <div class="osk-key" data-char="1">1</div><div class="osk-key" data-char="2">2</div><div class="osk-key" data-char="3">3</div>
-            </div>
-            <div class="osk-row">
-                <div class="osk-key" data-action="backspace">⌫</div><div class="osk-key" data-char="0">0</div><div class="osk-key" data-action="done">Done</div>
-            </div>
-        </div>
-    </div>
-    <!-- ===== END ON-SCREEN KEYBOARD ===== -->
+
 </body>
 </html>
