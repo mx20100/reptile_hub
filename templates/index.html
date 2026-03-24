@@ -1014,7 +1014,10 @@
         // Only active on touchscreen devices — desktop/VNC sessions
         // use a fine pointer and will use their own system keyboard.
         // =========================================================
-        const OSK_ENABLED = window.matchMedia('(pointer: coarse)').matches;
+        // pointer:coarse is unreliable on Pi's DSI touchscreen (Chromium reports it as fine).
+        // navigator.maxTouchPoints is the reliable signal on Linux/Chromium — it's > 0
+        // on the Pi touchscreen and 0 on a desktop mouse session.
+        const OSK_ENABLED = navigator.maxTouchPoints > 0 || ('ontouchstart' in window);
 
         let oskTarget  = null;
         let oskShiftOn = false;
