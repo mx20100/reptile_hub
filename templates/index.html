@@ -1136,12 +1136,14 @@
             if (el) el.addEventListener('focus', () => showKeyboard(el));
         });
 
-        // Tap outside keyboard + inputs → dismiss
-        document.addEventListener('touchstart', (e) => {
+        // Tap or click outside keyboard + inputs → dismiss
+        function oskOutsideHandler(e) {
             if (!osk.classList.contains('osk-visible')) return;
             const managedInputs = OSK_INPUT_IDS.map(id => document.getElementById(id));
             if (!osk.contains(e.target) && !managedInputs.includes(e.target)) hideKeyboard();
-        }, { passive: true });
+        }
+        document.addEventListener('touchstart', oskOutsideHandler, { passive: true });
+        document.addEventListener('mousedown',  oskOutsideHandler);
 
         let isDown = false;
         let startY;
