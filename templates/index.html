@@ -451,8 +451,8 @@
                     card.innerHTML = `
                         <div style="font-size: 24px; font-weight: bold;">${animal.name}</div>
                         <div style="font-size: 14px; margin-bottom: 8px;">${animal.species}</div>
-                        <div style="font-size: 13px; opacity: 0.9; display:flex; justify-content:space-between; width:100%; padding: 0 4px; box-sizing:border-box;">
-                            <span>Next: ${animal.next_fed || 'ASAP'}</span>${daysSince}
+                        <div style="font-size: 13px; opacity: 0.9;">
+                            Next: ${animal.next_fed || 'ASAP'}${daysSince ? ` &nbsp;·&nbsp; <span style="opacity:0.6;">${animal.days_since_fed}d ago</span>` : ''}
                         </div>
                         <div style="font-size: 12px; opacity: 0.7; margin-top: 4px;">W: ${animal.last_weight || 'No data'}</div>
                     `;

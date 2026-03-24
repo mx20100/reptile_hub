@@ -11,9 +11,6 @@ def get_feeder_recommendation(weight):
       * subadults (≈12-24 mo or until weight stabilises): up to 7% BW
         every 14-20d
       * adults: up to 5% BW every 20-30d (or 6 % every 30-40d)
-
-    Because the registry only passes the current weight, this function
-    approximates the age-based rules using a simple weight threshold.
     """
     try:
         w = float(weight)
