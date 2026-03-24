@@ -907,17 +907,21 @@
     </script>
 
     <script>
-        document.querySelectorAll('input').forEach(input => {
-            input.addEventListener('focus', () => {
-                const activeContainer = document.querySelector('.screen.active') || document.body;
-                activeContainer.style.paddingBottom = '400px';
-                setTimeout(() => { input.scrollIntoView({ behavior: 'smooth', block: 'center'}); }, 300);
+        // Use visualViewport to react to the actual keyboard height in real time.
+        // This avoids hardcoded delays and padding guesses.
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener('resize', () => {
+                const keyboardHeight = window.innerHeight - window.visualViewport.height;
+                const activeScreen = document.querySelector('.screen.active') || document.body;
+                activeScreen.style.paddingBottom = (keyboardHeight > 50 ? keyboardHeight + 20 : 100) + 'px';
+
+                // Scroll the focused input into the visible area
+                const focused = document.activeElement;
+                if (keyboardHeight > 50 && focused && ['INPUT', 'SELECT', 'TEXTAREA'].includes(focused.tagName)) {
+                    focused.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
             });
-            input.addEventListener('blur', () => {
-                const activeContainer = document.querySelector('.screen.active') || document.body;
-                activeContainer.style.paddingBottom = '100px';
-            });
-        });
+        }
 
         let isDown = false;
         let startY;
