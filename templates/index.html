@@ -260,6 +260,74 @@
         body.dragging * {
             pointer-events: none !important;
         }
+
+        /* =============================================
+           ON-SCREEN KEYBOARD (OSK)
+           ============================================= */
+        #osk {
+            display: none;
+            position: fixed;
+            bottom: 0; left: 0;
+            width: 100%;
+            z-index: 9000;
+            background: var(--btn);
+            border-top: 2px solid var(--btn-border);
+            box-sizing: border-box;
+            padding: 4px 2px 6px 2px;
+            max-height: 38vh;
+            touch-action: none;
+            user-select: none;
+        }
+        #osk.osk-visible { display: block; }
+
+        .osk-row {
+            display: flex;
+            justify-content: center;
+            gap: clamp(2px, 0.8vw, 6px);
+            margin-bottom: clamp(2px, 0.6vh, 5px);
+        }
+
+        .osk-key {
+            background: var(--btn);
+            color: var(--text);
+            border: 1.5px solid var(--btn-border);
+            border-radius: 6px;
+            min-width:  clamp(28px, 8.5vw, 68px);
+            height:     clamp(34px, 7.5vh, 56px);
+            font-size:  clamp(13px, 3.2vw, 22px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            flex-shrink: 0;
+            transition: background 0.08s;
+            -webkit-tap-highlight-color: transparent;
+            /* Override the global button styles */
+            padding: 0;
+            border-radius: 6px;
+        }
+        .osk-key:active,
+        .osk-key.osk-pressed           { background: var(--btn-border); }
+        .osk-key[data-action="backspace"] { min-width: clamp(44px, 13vw, 100px); }
+        .osk-key[data-action="shift"]     { min-width: clamp(44px, 13vw, 100px); }
+        .osk-key[data-action="space"]     { min-width: clamp(120px, 38vw, 280px); }
+        .osk-key[data-action="done"]      { min-width: clamp(56px, 14vw, 110px); background: #2196F3; color: white; border-color: #1565C0; }
+        .osk-key[data-action="shift"].osk-shift-on { background: #4CAF50; color: white; border-color: #388E3C; }
+
+        .osk-qwerty { display: none; }
+        .osk-numpad { display: none; }
+        .osk-qwerty.osk-panel-active { display: block; }
+        .osk-numpad.osk-panel-active { display: block; }
+
+        .osk-numpad .osk-row { gap: clamp(4px, 1.5vw, 12px); }
+        .osk-numpad .osk-key {
+            min-width:  clamp(60px, 25vw, 160px);
+            height:     clamp(40px, 9vh, 70px);
+            font-size:  clamp(18px, 4.5vw, 30px);
+            border-radius: 8px;
+        }
+        .osk-numpad .osk-key[data-action="done"]      { background: #2196F3; color: white; border-color: #1565C0; }
+        .osk-numpad .osk-key[data-action="backspace"] { min-width: clamp(60px, 25vw, 160px); }
     </style>
 </head>
 <body>
@@ -462,6 +530,7 @@
         }
 
         async function showScreen(id) {
+            hideKeyboard();
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             document.getElementById(id).classList.add('active');
             if(id === 'home') loadData();
@@ -907,21 +976,141 @@
     </script>
 
     <script>
-        // Use visualViewport to react to the actual keyboard height in real time.
-        // This avoids hardcoded delays and padding guesses.
-        if (window.visualViewport) {
-            window.visualViewport.addEventListener('resize', () => {
-                const keyboardHeight = window.innerHeight - window.visualViewport.height;
-                const activeScreen = document.querySelector('.screen.active') || document.body;
-                activeScreen.style.paddingBottom = (keyboardHeight > 50 ? keyboardHeight + 20 : 100) + 'px';
+        // =========================================================
+        // ON-SCREEN KEYBOARD (OSK)
+        // Only active on touchscreen devices — desktop/VNC sessions
+        // use a fine pointer and will use their own system keyboard.
+        // =========================================================
+        const OSK_ENABLED = window.matchMedia('(pointer: coarse)').matches;
 
-                // Scroll the focused input into the visible area
-                const focused = document.activeElement;
-                if (keyboardHeight > 50 && focused && ['INPUT', 'SELECT', 'TEXTAREA'].includes(focused.tagName)) {
-                    focused.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        let oskTarget  = null;
+        let oskShiftOn = false;
+
+        const osk         = document.getElementById('osk');
+        const qwertyPanel = osk.querySelector('.osk-qwerty');
+        const numpadPanel = osk.querySelector('.osk-numpad');
+
+        function showKeyboard(inputEl) {
+            if (!OSK_ENABLED) return;
+            oskTarget = inputEl;
+            const isNumber = inputEl.type === 'number';
+            qwertyPanel.classList.toggle('osk-panel-active', !isNumber);
+            numpadPanel.classList.toggle('osk-panel-active',  isNumber);
+            osk.classList.add('osk-visible');
+            requestAnimationFrame(scrollInputIntoView);
+        }
+
+        function hideKeyboard() {
+            if (!osk) return;
+            osk.classList.remove('osk-visible');
+            qwertyPanel.classList.remove('osk-panel-active');
+            numpadPanel.classList.remove('osk-panel-active');
+            document.querySelectorAll('.screen').forEach(s => { s.style.paddingBottom = ''; });
+            if (oskTarget) { oskTarget.blur(); oskTarget = null; }
+            oskShiftOn = false;
+            updateShiftKeys();
+        }
+
+        function scrollInputIntoView() {
+            if (!oskTarget) return;
+            const kbRect = osk.getBoundingClientRect();
+            const activeScreen = document.querySelector('.screen.active') || document.body;
+            activeScreen.style.paddingBottom = (kbRect.height + 20) + 'px';
+            requestAnimationFrame(() => {
+                const inputRect   = oskTarget.getBoundingClientRect();
+                const visibleBottom = kbRect.top - 12;
+                if (inputRect.bottom > visibleBottom) {
+                    activeScreen.scrollTop += inputRect.bottom - visibleBottom;
                 }
             });
         }
+
+        function handleOskKey(e) {
+            e.stopPropagation();
+            const key    = e.currentTarget;
+            const char   = key.dataset.char;
+            const action = key.dataset.action;
+            key.classList.add('osk-pressed');
+            setTimeout(() => key.classList.remove('osk-pressed'), 120);
+            if (char !== undefined) {
+                insertChar(oskShiftOn ? char.toUpperCase() : char);
+                if (oskShiftOn) { oskShiftOn = false; updateShiftKeys(); }
+                return;
+            }
+            if (action === 'backspace') { deleteChar(); }
+            else if (action === 'shift') { oskShiftOn = !oskShiftOn; updateShiftKeys(); }
+            else if (action === 'space') { insertChar(' '); }
+            else if (action === 'done')  { hideKeyboard(); }
+        }
+
+        function insertChar(char) {
+            if (!oskTarget) return;
+            if (oskTarget.type === 'number') {
+                oskTarget.value = oskTarget.value + char;
+            } else {
+                const s = oskTarget.selectionStart, e2 = oskTarget.selectionEnd;
+                const v = oskTarget.value;
+                oskTarget.value = v.slice(0, s) + char + v.slice(e2);
+                oskTarget.setSelectionRange(s + 1, s + 1);
+            }
+            oskTarget.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+
+        function deleteChar() {
+            if (!oskTarget) return;
+            if (oskTarget.type === 'number') {
+                oskTarget.value = oskTarget.value.slice(0, -1);
+            } else {
+                const s = oskTarget.selectionStart, e2 = oskTarget.selectionEnd;
+                const v = oskTarget.value;
+                if (s !== e2) {
+                    oskTarget.value = v.slice(0, s) + v.slice(e2);
+                    oskTarget.setSelectionRange(s, s);
+                } else if (s > 0) {
+                    oskTarget.value = v.slice(0, s - 1) + v.slice(s);
+                    oskTarget.setSelectionRange(s - 1, s - 1);
+                }
+            }
+            oskTarget.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+
+        function updateShiftKeys() {
+            document.querySelectorAll('.osk-key[data-action="shift"]').forEach(k => {
+                k.classList.toggle('osk-shift-on', oskShiftOn);
+            });
+            document.querySelectorAll('.osk-key[data-char]').forEach(k => {
+                const c = k.dataset.char;
+                if (c.length === 1 && c >= 'a' && c <= 'z') {
+                    k.textContent = oskShiftOn ? c.toUpperCase() : c;
+                }
+            });
+        }
+
+        // Attach tap handlers to every OSK key
+        osk.querySelectorAll('.osk-key').forEach(key => {
+            key.addEventListener('touchstart', (e) => { e.preventDefault(); handleOskKey(e); }, { passive: false });
+            key.addEventListener('mousedown',  (e) => { e.preventDefault(); handleOskKey(e); });
+        });
+
+        // Prevent OSK touches from leaking into the drag-scroll logic
+        osk.addEventListener('touchstart', e => e.stopPropagation(), { passive: false });
+        osk.addEventListener('touchmove',  e => { e.preventDefault(); e.stopPropagation(); }, { passive: false });
+        osk.addEventListener('touchend',   e => e.stopPropagation());
+        osk.addEventListener('mousedown',  e => e.stopPropagation());
+
+        // Wire up focus listeners on all managed inputs
+        const OSK_INPUT_IDS = ['new-name','new-freq','new-strike-retry','edit-name','edit-freq','edit-strike-retry','edit-weight'];
+        OSK_INPUT_IDS.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.addEventListener('focus', () => showKeyboard(el));
+        });
+
+        // Tap outside keyboard + inputs → dismiss
+        document.addEventListener('touchstart', (e) => {
+            if (!osk.classList.contains('osk-visible')) return;
+            const managedInputs = OSK_INPUT_IDS.map(id => document.getElementById(id));
+            if (!osk.contains(e.target) && !managedInputs.includes(e.target)) hideKeyboard();
+        }, { passive: true });
 
         let isDown = false;
         let startY;
@@ -998,5 +1187,38 @@
         document.addEventListener('touchend', stopDrag);
         document.addEventListener('touchmove', drag, {passive: false});
     </script>
+
+    <!-- ===== ON-SCREEN KEYBOARD ===== -->
+    <div id="osk" aria-hidden="true">
+        <div class="osk-qwerty">
+            <div class="osk-row">
+                <div class="osk-key" data-char="q">q</div><div class="osk-key" data-char="w">w</div><div class="osk-key" data-char="e">e</div><div class="osk-key" data-char="r">r</div><div class="osk-key" data-char="t">t</div><div class="osk-key" data-char="y">y</div><div class="osk-key" data-char="u">u</div><div class="osk-key" data-char="i">i</div><div class="osk-key" data-char="o">o</div><div class="osk-key" data-char="p">p</div>
+            </div>
+            <div class="osk-row">
+                <div class="osk-key" data-char="a">a</div><div class="osk-key" data-char="s">s</div><div class="osk-key" data-char="d">d</div><div class="osk-key" data-char="f">f</div><div class="osk-key" data-char="g">g</div><div class="osk-key" data-char="h">h</div><div class="osk-key" data-char="j">j</div><div class="osk-key" data-char="k">k</div><div class="osk-key" data-char="l">l</div>
+            </div>
+            <div class="osk-row">
+                <div class="osk-key" data-action="shift">⇧</div><div class="osk-key" data-char="z">z</div><div class="osk-key" data-char="x">x</div><div class="osk-key" data-char="c">c</div><div class="osk-key" data-char="v">v</div><div class="osk-key" data-char="b">b</div><div class="osk-key" data-char="n">n</div><div class="osk-key" data-char="m">m</div><div class="osk-key" data-action="backspace">⌫</div>
+            </div>
+            <div class="osk-row">
+                <div class="osk-key" data-char="-">-</div><div class="osk-key" data-char="'">'</div><div class="osk-key" data-action="space">space</div><div class="osk-key" data-char=".">.</div><div class="osk-key" data-action="done">Done</div>
+            </div>
+        </div>
+        <div class="osk-numpad">
+            <div class="osk-row">
+                <div class="osk-key" data-char="7">7</div><div class="osk-key" data-char="8">8</div><div class="osk-key" data-char="9">9</div>
+            </div>
+            <div class="osk-row">
+                <div class="osk-key" data-char="4">4</div><div class="osk-key" data-char="5">5</div><div class="osk-key" data-char="6">6</div>
+            </div>
+            <div class="osk-row">
+                <div class="osk-key" data-char="1">1</div><div class="osk-key" data-char="2">2</div><div class="osk-key" data-char="3">3</div>
+            </div>
+            <div class="osk-row">
+                <div class="osk-key" data-action="backspace">⌫</div><div class="osk-key" data-char="0">0</div><div class="osk-key" data-action="done">Done</div>
+            </div>
+        </div>
+    </div>
+    <!-- ===== END ON-SCREEN KEYBOARD ===== -->
 </body>
 </html>
