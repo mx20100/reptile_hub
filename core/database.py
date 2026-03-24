@@ -37,10 +37,13 @@ def init_db():
                         name TEXT PRIMARY KEY,
                         value TEXT)''')
 
-    # add new column to animals table if it doesn't already exist
+    # add new columns to animals table if they don't already exist
     cur = conn.execute("PRAGMA table_info(animals)").fetchall()
-    if not any(r['name'] == 'burmating' for r in cur):
+    col_names = [r['name'] for r in cur]
+    if 'burmating' not in col_names:
         conn.execute("ALTER TABLE animals ADD COLUMN burmating INTEGER DEFAULT 0")
+    if 'strike_retry_days' not in col_names:
+        conn.execute("ALTER TABLE animals ADD COLUMN strike_retry_days INTEGER DEFAULT 3")
 
     conn.commit()
     conn.close()

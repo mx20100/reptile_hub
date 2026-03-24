@@ -19,13 +19,13 @@ def get_feeder_recommendation(weight):
         w = float(weight)
         # juveniles/growers
         if w < 500:
-            return {"size": "10-15% of body weight", "qty": 1, "freq": "7 days"}
+            return {"size": "10-15% of body weight", "percent_min": 0.10, "percent_max": 0.15, "qty": 1, "freq": "7 days"}
         # sub‑adult
         elif w < 1500:
-            return {"size": "up to 7% of body weight", "qty": 1, "freq": "14-20 days"}
+            return {"size": "up to 7% of body weight", "percent_min": 0.05, "percent_max": 0.07, "qty": 1, "freq": "14-20 days"}
         # adults
         else:
-            return {"size": "up to 5% (or 6% every 30-40d)", "qty": 1, "freq": "20-30 days"}
+            return {"size": "up to 5% of body weight", "percent_min": 0.04, "percent_max": 0.05, "qty": 1, "freq": "20-30 days"}
     except (ValueError, TypeError):
         pass
     return None

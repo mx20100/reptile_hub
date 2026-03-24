@@ -26,23 +26,51 @@ def get_data():
         animal['burmating'] = bool(animal.get('burmating', 0))
         
         # Feeding logic
-        last_fed_log = conn.execute("SELECT timestamp FROM logs WHERE animal_id=? AND action='fed' ORDER BY timestamp DESC LIMIT 1", (animal['id'],)).fetchone()
+        last_fed_log = conn.execute(
+            "SELECT timestamp FROM logs WHERE animal_id=? AND action='fed' ORDER BY timestamp DESC LIMIT 1",
+            (animal['id'],)).fetchone()
+        last_refused_log = conn.execute(
+            "SELECT timestamp FROM logs WHERE animal_id=? AND action='refused' ORDER BY timestamp DESC LIMIT 1",
+            (animal['id'],)).fetchone()
+
         if last_fed_log:
             last_fed_date = datetime.datetime.strptime(last_fed_log['timestamp'], "%Y-%m-%d %H:%M:%S")
             animal['last_fed'] = last_fed_date.strftime("%Y-%m-%d")
-            next_fed_date = last_fed_date.date() + datetime.timedelta(days=animal['feed_days'])
+            days_since = (datetime.date.today() - last_fed_date.date()).days
+            animal['days_since_fed'] = days_since
+
+            # Check for a food strike (refused feeding more recent than last success)
+            in_strike = False
+            if last_refused_log:
+                last_refused_date = datetime.datetime.strptime(last_refused_log['timestamp'], "%Y-%m-%d %H:%M:%S")
+                animal['last_attempted_fed'] = last_refused_date.strftime("%Y-%m-%d")
+                if last_refused_date > last_fed_date:
+                    in_strike = True
+                    strike_retry = int(animal.get('strike_retry_days') or 3)
+                    next_fed_date = last_refused_date.date() + datetime.timedelta(days=strike_retry)
+                else:
+                    next_fed_date = last_fed_date.date() + datetime.timedelta(days=animal['feed_days'])
+            else:
+                animal['last_attempted_fed'] = None
+                next_fed_date = last_fed_date.date() + datetime.timedelta(days=animal['feed_days'])
+
+            animal['in_strike'] = in_strike
             animal['next_fed'] = next_fed_date.strftime("%Y-%m-%d")
 
-            # Calculate color status based on overdue days (date-only, ignores time of day)
-            # critical (red) = feeding day or overdue, good (green) = not yet due
+            # Status: strike takes priority over critical, but if retry day has arrived go critical
             days_overdue = (datetime.date.today() - next_fed_date).days
-            if days_overdue >= 0:
+            if in_strike and days_overdue < 0:
+                animal['status'] = "strike"
+            elif days_overdue >= 0:
                 animal['status'] = "critical"
             else:
                 animal['status'] = "good"
         else:
             animal['last_fed'] = "Never"
             animal['next_fed'] = "ASAP"
+            animal['last_attempted_fed'] = None
+            animal['days_since_fed'] = None
+            animal['in_strike'] = False
             animal['status'] = "critical"
             
         # Weight and feeder recommendation logic
@@ -55,7 +83,17 @@ def get_data():
             # Calculate feeder recommendation using the Registry
             rec = calculate_feeder(animal['species'], weight_val)
             if isinstance(rec, dict):
-                animal['feeder_rec'] = f"{rec['qty']}x {rec['size']} (Suggested: {rec['freq']})"
+                size_str = rec['size']
+                # If the module provides percent_min/percent_max, calculate actual gram range
+                if 'percent_min' in rec and 'percent_max' in rec:
+                    try:
+                        w_val = float(weight_val)
+                        g_min = round(w_val * rec['percent_min'])
+                        g_max = round(w_val * rec['percent_max'])
+                        size_str = f"{g_min}–{g_max}g ({rec['size']})"
+                    except (ValueError, TypeError):
+                        pass
+                animal['feeder_rec'] = f"{rec['qty']}x {size_str} (Suggested: {rec['freq']})"
             elif isinstance(rec, str):
                 animal['feeder_rec'] = rec
             else:
@@ -113,8 +151,8 @@ def get_catalog():
 def add_animal():
     data = request.json
     conn = get_db()
-    conn.execute("INSERT INTO animals (name, species, category, feed_days, burmating) VALUES (?, ?, ?, ?, 0)",
-                 (data['name'], data['species'], data['category'], data['feed_days']))
+    conn.execute("INSERT INTO animals (name, species, category, feed_days, burmating, strike_retry_days) VALUES (?, ?, ?, ?, 0, ?)",
+                 (data['name'], data['species'], data['category'], data['feed_days'], int(data.get('strike_retry_days', 3))))
     conn.commit()
     conn.close()
     return jsonify({"success": True})
@@ -133,6 +171,9 @@ def edit_animal(animal_id):
     if 'burmating' in data:
         query += ', burmating=?'
         fields.append(1 if data['burmating'] else 0)
+    if 'strike_retry_days' in data:
+        query += ', strike_retry_days=?'
+        fields.append(int(data.get('strike_retry_days', 3)))
     query += ' WHERE id=?'
     fields.append(animal_id)
     conn.execute(query, fields)

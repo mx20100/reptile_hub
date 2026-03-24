@@ -90,15 +90,53 @@
         }
         
         /* Status Animations & Borders */
-        @keyframes pulse-red { 
-            0% { border-color: #ff4c4c; box-shadow: none; } 
-            100% { border-color: #ff0000; box-shadow: 0 0 25px #ff0000, inset 0 0 15px rgba(255, 0, 0, 0.3); } 
+        @keyframes pulse-red {
+            0% { border-color: #ff4c4c; box-shadow: none; }
+            100% { border-color: #ff0000; box-shadow: 0 0 25px #ff0000, inset 0 0 15px rgba(255, 0, 0, 0.3); }
         }
         .needs-feeding { animation: pulse-red 0.4s ease-in-out infinite alternate; border-width: 4px !important; }
-        .status-critical { border: 2px solid #ff4c4c; } 
-        .status-warning { border: 2px solid #ffa500; }  
-        .status-good { border: 2px solid #4CAF50 !important; }     
+        .status-critical { border: 2px solid #ff4c4c; }
+        .status-warning { border: 2px solid #ffa500; }
+        .status-good { border: 2px solid #4CAF50 !important; }
         .status-burmating { border: 2px solid #ffa500; } /* steady yellow when burmating */
+
+        /* Food strike: red/yellow rotating border */
+        @property --strike-angle {
+            syntax: '<angle>';
+            initial-value: 0deg;
+            inherits: false;
+        }
+        @keyframes spin-strike { to { --strike-angle: 360deg; } }
+        .status-strike {
+            --strike-angle: 0deg;
+            animation: spin-strike 2s linear infinite !important;
+            border: 3px solid transparent !important;
+            background:
+                linear-gradient(var(--btn), var(--btn)) padding-box,
+                conic-gradient(from var(--strike-angle), #ff4c4c, #ffa500, #ff4c4c, #ffa500, #ff4c4c) border-box;
+        }
+
+        /* Feeding result modal */
+        #feeding-modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 500;
+            align-items: center;
+            justify-content: center;
+        }
+        #feeding-modal.show { display: flex; }
+        .feeding-modal-box {
+            background: var(--btn);
+            border: 2px solid var(--btn-border);
+            border-radius: 12px;
+            padding: 30px 25px;
+            width: 80%;
+            max-width: 320px;
+            text-align: center;
+        }
 
         #burmation-btn.burmation-on { background: #4CAF50; color: white; }
         #burmation-btn.burmation-off { background: #ccc; color: #333; }
@@ -227,6 +265,19 @@
 <body>
     <div id="toast" class="toast"><span id="toast-icon">✅</span><span id="toast-msg">Action successful!</span></div>
 
+    <!-- Feeding attempt result modal -->
+    <div id="feeding-modal">
+        <div class="feeding-modal-box">
+            <h2 style="margin: 0 0 8px 0; font-size: 24px;">Feeding Attempt</h2>
+            <p style="font-size: 18px; margin: 0 0 25px 0;">Did <strong id="feed-modal-name"></strong> eat?</p>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                <button onclick="confirmFeeding(false)" style="background: #ffa500; color: white; border: none; font-size: 20px; padding: 15px; border-radius: 8px;">Refused</button>
+                <button onclick="confirmFeeding(true)" style="background: #4CAF50; color: white; border: none; font-size: 20px; padding: 15px; border-radius: 8px;">Fed!</button>
+            </div>
+            <button onclick="closeFeedingModal()" style="margin-top: 15px; width: 100%; background: transparent; color: var(--text); border: 1px solid var(--btn-border); padding: 10px; border-radius: 8px; font-size: 16px;">Cancel</button>
+        </div>
+    </div>
+
     <div id="home" class="screen active">
         <h1>Reptile Hub</h1>
         <div id="main-view"></div>
@@ -236,7 +287,7 @@
     <div id="animal-actions" class="screen">
         <h1 id="action-title">Animal Name</h1>
         <div class="action-btns">
-            <button onclick="logAction('fed')">Animal Fed</button>
+            <button onclick="openFeedingModal()">Feeding Attempted</button>
             <button onclick="weighAnimal()">Animal Weighed</button>
             <button onclick="showInfo()">Information</button>
             <button id="burmation-btn" class="burmation-off" onclick="toggleBurmation()">Burmation: OFF</button>
@@ -263,6 +314,7 @@
         <select id="edit-category" onchange="updateEditSpecies()"></select>
         <select id="edit-species"></select>
         <input type="number" id="edit-freq" placeholder="Feed Freq (Days)">
+        <input type="number" id="edit-strike-retry" placeholder="Retry Days After Refusal (default: 3)">
         <input type="number" id="edit-weight" placeholder="Last Weight (g)">
         <div style="display: flex; align-items: center; justify-content: space-between; background: var(--btn); border: 2px solid var(--btn-border); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
             <span style="font-size: 22px;">In Burmation:</span>
@@ -307,7 +359,8 @@
         <select id="new-category" onchange="updateSpecies()"></select>
         <select id="new-species"></select>
         <input type="number" id="new-freq" placeholder="Feed Freq (Days)">
-        
+        <input type="number" id="new-strike-retry" placeholder="Retry Days After Refusal (default: 3)">
+
         <button style="width: 100%; background: #4CAF50; color: white; border: none; font-size: 24px; padding: 15px; margin-top: 10px; margin-bottom: 40px;" onclick="addAnimal()">Add Animal</button>
         
         <button class="fixed-back-btn" onclick="showScreen('home')">Back</button>
@@ -380,7 +433,7 @@
                 const container = document.getElementById('main-view');
                 container.innerHTML = '';
                 data.animals.forEach(animal => {
-                    // if burmating override status
+                    // burmating overrides everything
                     let status = animal.status || 'good';
                     if (animal.burmating) {
                         status = 'burmating';
@@ -393,10 +446,14 @@
                         document.getElementById('action-title').innerText = animal.name;
                         showScreen('animal-actions');
                     };
+                    const daysSince = (animal.days_since_fed !== null && animal.days_since_fed !== undefined)
+                        ? `<span style="opacity:0.6;">${animal.days_since_fed}d ago</span>` : '';
                     card.innerHTML = `
                         <div style="font-size: 24px; font-weight: bold;">${animal.name}</div>
                         <div style="font-size: 14px; margin-bottom: 8px;">${animal.species}</div>
-                        <div style="font-size: 14px; opacity: 0.9;">Next: ${animal.next_fed || 'ASAP'}</div>
+                        <div style="font-size: 13px; opacity: 0.9; display:flex; justify-content:space-between; width:100%; padding: 0 4px; box-sizing:border-box;">
+                            <span>Next: ${animal.next_fed || 'ASAP'}</span>${daysSince}
+                        </div>
                         <div style="font-size: 12px; opacity: 0.7; margin-top: 4px;">W: ${animal.last_weight || 'No data'}</div>
                     `;
                     container.appendChild(card);
@@ -426,6 +483,29 @@
             });
             showToast('Logged!');
             showScreen('home');
+        }
+
+        function openFeedingModal() {
+            document.getElementById('feed-modal-name').innerText = currentAnimal.name;
+            document.getElementById('feeding-modal').classList.add('show');
+        }
+
+        function closeFeedingModal() {
+            document.getElementById('feeding-modal').classList.remove('show');
+        }
+
+        async function confirmFeeding(success) {
+            closeFeedingModal();
+            if (success) {
+                await logAction('fed');
+            } else {
+                await fetch('/api/action', {
+                    method: 'POST', headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({animal_id: currentAnimal.id, action: 'refused', value: 0})
+                });
+                showToast('Refusal logged. Retry scheduled.');
+                showScreen('home');
+            }
         }
 
         function updateBurmationButton() {
@@ -536,10 +616,16 @@
 
         function showInfo() {
             document.getElementById('info-title').innerText = currentAnimal.name + " Info";
+            const daysSince = (currentAnimal.days_since_fed !== null && currentAnimal.days_since_fed !== undefined)
+                ? `${currentAnimal.days_since_fed} days ago` : 'N/A';
+            const strikeRow = currentAnimal.last_attempted_fed
+                ? `<strong>Last Attempted:</strong> ${currentAnimal.last_attempted_fed}<br>` : '';
             let html = `
-                <strong>Last Fed:</strong> ${currentAnimal.last_fed}<br>
+                <strong>Last Fed:</strong> ${currentAnimal.last_fed} <small style="opacity:0.6;">(${daysSince})</small><br>
+                ${strikeRow}
                 <strong>Next Feed:</strong> ${currentAnimal.next_fed}<br>
                 <strong>Freq:</strong> Every ${currentAnimal.feed_days} days<br>
+                <strong>Strike Retry:</strong> ${currentAnimal.strike_retry_days || 3} days after refusal<br>
                 <strong>Weight:</strong> ${currentAnimal.last_weight}<br>
                 <small>(Weighed: ${currentAnimal.last_weighed_date})</small><br>
                 <strong>Burmation:</strong> ${currentAnimal.burmating ? 'Yes' : 'No'}
@@ -555,11 +641,13 @@
         }
 
         async function addAnimal() {
+            const retryVal = parseInt(document.getElementById('new-strike-retry').value);
             const data = {
                 name: document.getElementById('new-name').value,
                 category: document.getElementById('new-category').value,
                 species: document.getElementById('new-species').value,
                 feed_days: parseInt(document.getElementById('new-freq').value),
+                strike_retry_days: isNaN(retryVal) ? 3 : retryVal,
             };
             if(!data.name || isNaN(data.feed_days)) return showToast("Check inputs", true);
             try {
@@ -584,6 +672,7 @@
             // Fill in the current name and frequency
             document.getElementById('edit-name').value = currentAnimal.name;
             document.getElementById('edit-freq').value = currentAnimal.feed_days;
+            document.getElementById('edit-strike-retry').value = currentAnimal.strike_retry_days || 3;
             
             // Extract just the numbers from the weight (e.g., turns "45g" into "45")
             let weightNum = currentAnimal.last_weight ? currentAnimal.last_weight.replace(/[^0-9.]/g, '') : '';
@@ -617,11 +706,13 @@
         }
 
         async function saveEdit() {
+            const retryVal = parseInt(document.getElementById('edit-strike-retry').value);
             const data = {
                 name: document.getElementById('edit-name').value,
                 category: document.getElementById('edit-category').value,
                 species: document.getElementById('edit-species').value,
                 feed_days: parseInt(document.getElementById('edit-freq').value),
+                strike_retry_days: isNaN(retryVal) ? 3 : retryVal,
                 last_weight: document.getElementById('edit-weight').value,
                 burmating: document.getElementById('edit-burmation').checked
             };
