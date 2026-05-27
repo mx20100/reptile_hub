@@ -68,6 +68,8 @@
             display: flex;
             align-items: center;
             gap: 7px;
+            position: relative;
+            overflow: hidden;
         }
 
         .card-body {
@@ -128,16 +130,31 @@
             animation: pulse-header 0.9s ease-in-out infinite alternate;
         }
 
-        /* Strike: seamlessly looping red↔yellow gradient.
-           Gradient starts AND ends on red so the loop has no hard cut. */
+        /* Strike: seamlessly flowing red↔yellow.
+           A ::before pseudo-element holds the gradient and slides left
+           continuously via translateX. Transform animation never snaps —
+           no hard cut is possible regardless of timing. */
         @keyframes strike-flow {
-            0%   { background-position: 0% 0%; }
-            100% { background-position: 100% 0%; }
+            from { transform: translateX(0); }
+            to   { transform: translateX(-50%); }
         }
-        .status-strike .card-header {
-            background: linear-gradient(90deg, #e03030, #ffa500, #e03030);
-            background-size: 200% 100%;
-            animation: strike-flow 2s linear infinite;
+        .status-strike .card-header::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            width: 200%;
+            background: repeating-linear-gradient(
+                90deg,
+                #e03030 0px,
+                #ffa500 70px,
+                #e03030 140px
+            );
+            animation: strike-flow 1.8s linear infinite;
+            z-index: 0;
+        }
+        .status-strike .card-header > * {
+            position: relative;
+            z-index: 1;
         }
 
         /* ── Overlay modals (feeding, weight) ── */
@@ -628,7 +645,7 @@
                         showScreen('animal-actions');
                     };
                     card.innerHTML = `
-                        <div class="card-header">${animal.name}</div>
+                        <div class="card-header"><span>${animal.name}</span></div>
                         <div class="card-body">
                             <div class="card-row"><span class="ci">${catEmoji}</span>${animal.species}</div>
                             <div class="card-row"><span class="ci">📅</span>${nextLabel}${daysSince}</div>
