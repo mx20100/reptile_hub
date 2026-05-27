@@ -99,6 +99,28 @@
             margin-right: 6px;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* OSK */
+        #osk {
+            display: none; position: fixed; bottom: 0; left: 0; width: 100%;
+            background: #fff; border-top: 2px solid #dde1e7;
+            padding: 4px 2px 6px; box-sizing: border-box; z-index: 9000;
+            user-select: none; touch-action: none;
+        }
+        #osk.osk-visible { display: block; }
+        .osk-row { display: flex; justify-content: center; gap: clamp(2px,.8vw,6px); margin-bottom: clamp(2px,.6vh,5px); }
+        .osk-key {
+            background: #f0f2f5; color: #1a1a2e; border: 1.5px solid #dde1e7; border-radius: 6px;
+            min-width: clamp(28px,8.5vw,68px); height: clamp(34px,7.5vh,52px);
+            font-size: clamp(13px,3.2vw,20px); display: flex; align-items: center;
+            justify-content: center; cursor: pointer; flex-shrink: 0;
+        }
+        .osk-key:active, .osk-key.osk-pressed { background: #dde1e7; }
+        .osk-key[data-action="backspace"] { min-width: clamp(44px,13vw,100px); }
+        .osk-key[data-action="shift"]     { min-width: clamp(44px,13vw,100px); }
+        .osk-key[data-action="space"]     { min-width: clamp(120px,38vw,280px); }
+        .osk-key[data-action="done"]      { min-width: clamp(56px,14vw,110px); background: #2196F3; color: white; border-color: #1565C0; }
+        .osk-key[data-action="shift"].osk-shift-on { background: #3aaa5c; color: white; }
     </style>
 </head>
 <body>
@@ -117,6 +139,25 @@
         <button class="btn-skip"    onclick="skipWifi()">Skip for Now</button>
 
         <div id="loading"><span class="spinner"></span>Connecting, please wait...</div>
+    </div>
+
+    <!-- On-screen keyboard for password field -->
+    <div id="osk">
+        <div class="osk-row">
+            <div class="osk-key" data-char="q">q</div><div class="osk-key" data-char="w">w</div><div class="osk-key" data-char="e">e</div><div class="osk-key" data-char="r">r</div><div class="osk-key" data-char="t">t</div><div class="osk-key" data-char="y">y</div><div class="osk-key" data-char="u">u</div><div class="osk-key" data-char="i">i</div><div class="osk-key" data-char="o">o</div><div class="osk-key" data-char="p">p</div>
+        </div>
+        <div class="osk-row">
+            <div class="osk-key" data-char="a">a</div><div class="osk-key" data-char="s">s</div><div class="osk-key" data-char="d">d</div><div class="osk-key" data-char="f">f</div><div class="osk-key" data-char="g">g</div><div class="osk-key" data-char="h">h</div><div class="osk-key" data-char="j">j</div><div class="osk-key" data-char="k">k</div><div class="osk-key" data-char="l">l</div>
+        </div>
+        <div class="osk-row">
+            <div class="osk-key" data-action="shift">⇧</div><div class="osk-key" data-char="z">z</div><div class="osk-key" data-char="x">x</div><div class="osk-key" data-char="c">c</div><div class="osk-key" data-char="v">v</div><div class="osk-key" data-char="b">b</div><div class="osk-key" data-char="n">n</div><div class="osk-key" data-char="m">m</div><div class="osk-key" data-action="backspace">⌫</div>
+        </div>
+        <div class="osk-row">
+            <div class="osk-key" data-char="1">1</div><div class="osk-key" data-char="2">2</div><div class="osk-key" data-char="3">3</div><div class="osk-key" data-char="4">4</div><div class="osk-key" data-char="5">5</div><div class="osk-key" data-char="6">6</div><div class="osk-key" data-char="7">7</div><div class="osk-key" data-char="8">8</div><div class="osk-key" data-char="9">9</div><div class="osk-key" data-char="0">0</div>
+        </div>
+        <div class="osk-row">
+            <div class="osk-key" data-char="!">!</div><div class="osk-key" data-char="@">@</div><div class="osk-key" data-char="#">#</div><div class="osk-key" data-char="$">$</div><div class="osk-key" data-char="-">-</div><div class="osk-key" data-action="space">space</div><div class="osk-key" data-char=".">.</div><div class="osk-key" data-action="done">Done</div>
+        </div>
     </div>
 
     <script>
@@ -165,6 +206,73 @@
             await fetch('/api/wifi/skip', {method: 'POST'});
             window.location.href = '/';
         }
+
+        // ── On-screen keyboard ──
+        const osk = document.getElementById('osk');
+        let oskTarget = null;
+        let oskShift  = false;
+
+        function showOsk(el) {
+            oskTarget = el;
+            osk.classList.add('osk-visible');
+            document.body.style.paddingBottom = (osk.getBoundingClientRect().height + 20) + 'px';
+        }
+        function hideOsk() {
+            osk.classList.remove('osk-visible');
+            document.body.style.paddingBottom = '';
+            if (oskTarget) { oskTarget.blur(); oskTarget = null; }
+            oskShift = false;
+            updateShift();
+        }
+        function updateShift() {
+            document.querySelectorAll('.osk-key[data-action="shift"]').forEach(k => k.classList.toggle('osk-shift-on', oskShift));
+            document.querySelectorAll('.osk-key[data-char]').forEach(k => {
+                const c = k.dataset.char;
+                if (c && c.length === 1 && c >= 'a' && c <= 'z') k.textContent = oskShift ? c.toUpperCase() : c;
+            });
+        }
+        function oskInsert(ch) {
+            if (!oskTarget) return;
+            const s = oskTarget.selectionStart, e = oskTarget.selectionEnd, v = oskTarget.value;
+            oskTarget.value = v.slice(0, s) + ch + v.slice(e);
+            oskTarget.setSelectionRange(s + 1, s + 1);
+            if (oskShift) { oskShift = false; updateShift(); }
+        }
+        function oskDelete() {
+            if (!oskTarget) return;
+            const s = oskTarget.selectionStart, e = oskTarget.selectionEnd, v = oskTarget.value;
+            if (s !== e) { oskTarget.value = v.slice(0, s) + v.slice(e); oskTarget.setSelectionRange(s, s); }
+            else if (s > 0) { oskTarget.value = v.slice(0, s - 1) + v.slice(s); oskTarget.setSelectionRange(s - 1, s - 1); }
+        }
+
+        osk.querySelectorAll('.osk-key').forEach(key => {
+            const handle = (e) => {
+                e.preventDefault();
+                key.classList.add('osk-pressed');
+                setTimeout(() => key.classList.remove('osk-pressed'), 120);
+                const ch = key.dataset.char, action = key.dataset.action;
+                if (ch !== undefined)         oskInsert(oskShift ? ch.toUpperCase() : ch);
+                else if (action === 'backspace') oskDelete();
+                else if (action === 'shift')     { oskShift = !oskShift; updateShift(); }
+                else if (action === 'space')     oskInsert(' ');
+                else if (action === 'done')      hideOsk();
+            };
+            key.addEventListener('touchstart', handle, {passive: false});
+            key.addEventListener('mousedown',  handle);
+        });
+        osk.addEventListener('touchstart', e => e.stopPropagation(), {passive: false});
+        osk.addEventListener('touchmove',  e => { e.preventDefault(); e.stopPropagation(); }, {passive: false});
+        osk.addEventListener('mousedown',  e => e.stopPropagation());
+
+        document.getElementById('password').addEventListener('focus', function() { showOsk(this); });
+        document.addEventListener('touchstart', e => {
+            if (!osk.classList.contains('osk-visible')) return;
+            if (!osk.contains(e.target) && e.target !== document.getElementById('password')) hideOsk();
+        }, {passive: true});
+        document.addEventListener('mousedown', e => {
+            if (!osk.classList.contains('osk-visible')) return;
+            if (!osk.contains(e.target) && e.target !== document.getElementById('password')) hideOsk();
+        });
     </script>
 </body>
 </html>

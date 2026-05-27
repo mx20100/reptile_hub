@@ -119,23 +119,24 @@
         .status-critical .card-header { background: #e03030; }
         .status-regurg  .card-header { background: #c05800; }
 
-        /* Pulsing red header for overdue feeding */
+        /* Smooth pulsing red header for overdue feeding */
         @keyframes pulse-header {
-            0%   { background: #e03030; }
-            100% { background: #ff0000; box-shadow: 0 4px 18px rgba(255,0,0,0.45); }
+            0%   { background: #e03030; box-shadow: none; }
+            100% { background: #ff0000; box-shadow: 0 4px 20px rgba(255,0,0,0.5); }
         }
         .needs-feeding .card-header {
-            animation: pulse-header 0.45s ease-in-out infinite alternate;
+            animation: pulse-header 0.9s ease-in-out infinite alternate;
         }
 
-        /* Strike: flowing red↔yellow gradient on header */
+        /* Strike: seamlessly looping red↔yellow gradient.
+           Gradient starts AND ends on red so the loop has no hard cut. */
         @keyframes strike-flow {
-            0%   { background-position: 0% 50%; }
-            100% { background-position: 200% 50%; }
+            0%   { background-position: 0% 0%; }
+            100% { background-position: 100% 0%; }
         }
         .status-strike .card-header {
-            background: linear-gradient(90deg, #e03030, #ffa500, #e03030, #ffa500);
-            background-size: 300% 100%;
+            background: linear-gradient(90deg, #e03030, #ffa500, #e03030);
+            background-size: 200% 100%;
             animation: strike-flow 2s linear infinite;
         }
 
@@ -278,8 +279,31 @@
             box-shadow: var(--shadow);
         }
 
-        .toast { position: fixed; top: 20px; right: -400px; background: #3aaa5c; color: white; padding: 14px 20px; border-radius: 10px; transition: right 0.4s; z-index: 10000; display: flex; align-items: center; gap: 12px; font-size: 16px; box-shadow: 0 4px 14px rgba(0,0,0,0.2); }
-        .toast.show { right: 20px; }
+        .toast {
+            position: fixed;
+            bottom: 85px;
+            left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            background: #3aaa5c;
+            color: white;
+            padding: 13px 22px;
+            border-radius: 24px;
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 16px;
+            font-weight: 500;
+            box-shadow: 0 4px 18px rgba(0,0,0,0.28);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s, transform 0.3s;
+            white-space: nowrap;
+        }
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
         .toast.error { background: #e03030; }
 
         body.dragging * { pointer-events: none !important; }
@@ -399,6 +423,18 @@
                 <button onclick="confirmFeeding(true)"  style="background:#3aaa5c;color:white;border:none;font-size:19px;padding:14px;border-radius:10px;">Fed! ✓</button>
             </div>
             <button onclick="closeFeedingModal()" style="margin-top:12px;width:100%;background:transparent;color:var(--text);border:1px solid var(--btn-border);padding:10px;border-radius:10px;font-size:15px;box-shadow:none;">Cancel</button>
+        </div>
+    </div>
+
+    <!-- Regurgitation confirm modal -->
+    <div id="regurg-modal" class="modal-overlay">
+        <div class="modal-box">
+            <h2>🤢 Regurgitation</h2>
+            <p>Log regurgitation for <strong id="regurg-modal-name"></strong>?<br><small style="opacity:0.6;">This resets the feeding timeline.</small></p>
+            <div class="modal-btn-row">
+                <button onclick="closeRegurgModal()" style="background:transparent;border:1.5px solid var(--btn-border);font-size:18px;padding:13px;border-radius:10px;box-shadow:none;">Cancel</button>
+                <button onclick="confirmRegurgitation()" style="background:#c05800;color:white;border:none;font-size:18px;padding:13px;border-radius:10px;">Confirm</button>
+            </div>
         </div>
     </div>
 
@@ -699,8 +735,17 @@
             await logAction('weighed', parseFloat(val));
         }
 
-        async function logRegurgitation() {
-            if (!confirm(`Log regurgitation for ${currentAnimal.name}? This will reset the feeding timeline.`)) return;
+        function logRegurgitation() {
+            document.getElementById('regurg-modal-name').innerText = currentAnimal.name;
+            document.getElementById('regurg-modal').classList.add('show');
+        }
+
+        function closeRegurgModal() {
+            document.getElementById('regurg-modal').classList.remove('show');
+        }
+
+        async function confirmRegurgitation() {
+            closeRegurgModal();
             await fetch('/api/action', {
                 method: 'POST', headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({animal_id: currentAnimal.id, action: 'regurgitated', value: 0})
