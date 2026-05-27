@@ -57,20 +57,17 @@ def check_update():
 
 @update_bp.route('/api/update/apply', methods=['POST'])
 def apply_update():
-    """Pull the latest code and restart the reptilehub service."""
+    """Pull the latest code and reboot the Pi."""
     try:
-        # Run the update script (it does git pull + service restart)
-        result = subprocess.run(
+        # Launch the update script detached so Flask can return a response
+        # before the Pi reboots. stdout/stderr go to /tmp/reptile_update.log.
+        log = open('/tmp/reptile_update.log', 'w')
+        subprocess.Popen(
             ['sudo', UPDATE_SCRIPT],
-            capture_output=True, text=True,
-            cwd=PROJECT_DIR, timeout=60
+            stdout=log, stderr=log,
+            cwd=PROJECT_DIR,
+            close_fds=True
         )
-        if result.returncode != 0:
-            return jsonify({
-                'success': False,
-                'error': result.stderr or 'Update script failed'
-            }), 500
-
-        return jsonify({'success': True, 'message': 'Update applied. Restarting...'})
+        return jsonify({'success': True, 'message': 'Updating and rebooting...'})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
