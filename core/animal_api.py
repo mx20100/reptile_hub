@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify
 import datetime
 from core.database import get_db
-from core.registry import calculate_feeder, get_available_species
+from core.registry import calculate_feeder, get_available_species, get_regurg_wait
 
 # Create Blueprint
 animal_bp = Blueprint('animal_bp', __name__)
@@ -32,6 +32,9 @@ def get_data():
         last_refused_log = conn.execute(
             "SELECT timestamp FROM logs WHERE animal_id=? AND action='refused' ORDER BY timestamp DESC LIMIT 1",
             (animal['id'],)).fetchone()
+        last_regurg_log = conn.execute(
+            "SELECT timestamp FROM logs WHERE animal_id=? AND action='regurgitated' ORDER BY timestamp DESC LIMIT 1",
+            (animal['id'],)).fetchone()
 
         if last_fed_log:
             last_fed_date = datetime.datetime.strptime(last_fed_log['timestamp'], "%Y-%m-%d %H:%M:%S")
@@ -39,27 +42,46 @@ def get_data():
             days_since = (datetime.date.today() - last_fed_date.date()).days
             animal['days_since_fed'] = days_since
 
-            # Check for a food strike (refused feeding more recent than last success)
-            in_strike = False
-            if last_refused_log:
-                last_refused_date = datetime.datetime.strptime(last_refused_log['timestamp'], "%Y-%m-%d %H:%M:%S")
-                animal['last_attempted_fed'] = last_refused_date.strftime("%Y-%m-%d")
-                if last_refused_date > last_fed_date:
-                    in_strike = True
-                    strike_retry = int(animal.get('strike_retry_days') or 3)
-                    next_fed_date = last_refused_date.date() + datetime.timedelta(days=strike_retry)
+            # --- Regurgitation takes highest priority ---
+            in_regurg = False
+            if last_regurg_log:
+                last_regurg_date = datetime.datetime.strptime(last_regurg_log['timestamp'], "%Y-%m-%d %H:%M:%S")
+                if last_regurg_date > last_fed_date:
+                    in_regurg = True
+                    regurg_wait = get_regurg_wait(animal['species'])
+                    next_fed_date = last_regurg_date.date() + datetime.timedelta(days=regurg_wait)
+                    animal['last_attempted_fed'] = None
+                    animal['in_strike'] = False
+                    animal['regurg_date'] = last_regurg_date.strftime("%Y-%m-%d")
                 else:
-                    next_fed_date = last_fed_date.date() + datetime.timedelta(days=animal['feed_days'])
+                    animal['regurg_date'] = None
             else:
-                animal['last_attempted_fed'] = None
-                next_fed_date = last_fed_date.date() + datetime.timedelta(days=animal['feed_days'])
+                animal['regurg_date'] = None
 
-            animal['in_strike'] = in_strike
+            if not in_regurg:
+                # --- Food strike check ---
+                in_strike = False
+                if last_refused_log:
+                    last_refused_date = datetime.datetime.strptime(last_refused_log['timestamp'], "%Y-%m-%d %H:%M:%S")
+                    animal['last_attempted_fed'] = last_refused_date.strftime("%Y-%m-%d")
+                    if last_refused_date > last_fed_date:
+                        in_strike = True
+                        strike_retry = int(animal.get('strike_retry_days') or 3)
+                        next_fed_date = last_refused_date.date() + datetime.timedelta(days=strike_retry)
+                    else:
+                        next_fed_date = last_fed_date.date() + datetime.timedelta(days=animal['feed_days'])
+                else:
+                    animal['last_attempted_fed'] = None
+                    next_fed_date = last_fed_date.date() + datetime.timedelta(days=animal['feed_days'])
+                animal['in_strike'] = in_strike
+
+            animal['in_regurg'] = in_regurg
             animal['next_fed'] = next_fed_date.strftime("%Y-%m-%d")
 
-            # Status: strike takes priority over critical, but if retry day has arrived go critical
             days_overdue = (datetime.date.today() - next_fed_date).days
-            if in_strike and days_overdue < 0:
+            if in_regurg and days_overdue < 0:
+                animal['status'] = "regurg"
+            elif animal['in_strike'] and days_overdue < 0:
                 animal['status'] = "strike"
             elif days_overdue >= 0:
                 animal['status'] = "critical"
@@ -71,6 +93,8 @@ def get_data():
             animal['last_attempted_fed'] = None
             animal['days_since_fed'] = None
             animal['in_strike'] = False
+            animal['in_regurg'] = False
+            animal['regurg_date'] = None
             animal['status'] = "critical"
             
         # Weight and feeder recommendation logic

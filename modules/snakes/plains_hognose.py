@@ -2,6 +2,9 @@
 
 SPECIES_NAME = "Plains Hognose"
 CATEGORY = "Snakes"
+# Days to wait before offering food again after a regurgitation event.
+# Hognose snakes: 7-10 days; 10 days is the recommended safe minimum.
+REGURG_WAIT_DAYS = 10
 
 def get_feeder_recommendation(weight):
     try:

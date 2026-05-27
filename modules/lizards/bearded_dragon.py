@@ -2,6 +2,9 @@
 
 SPECIES_NAME = "Bearded Dragon"
 CATEGORY = "Lizards"
+# Days to wait before offering food again after a regurgitation event.
+# Bearded dragons: withhold food 3-5 days, then reintroduce small easy prey. 5 days is safe.
+REGURG_WAIT_DAYS = 5
 
 def get_feeder_recommendation(weight):
     # Weight parameter is ignored; recommendations are stage/size-based.

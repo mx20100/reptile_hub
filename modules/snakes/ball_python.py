@@ -2,6 +2,9 @@
 
 SPECIES_NAME = "Ball Python"
 CATEGORY = "Snakes"
+# Days to wait before offering food again after a regurgitation event.
+# Ball pythons need 2-3 weeks minimum; 21 days is the safe standard.
+REGURG_WAIT_DAYS = 21
 
 def get_feeder_recommendation(weight):
     """Return feeding guidance based on the animal's weight.

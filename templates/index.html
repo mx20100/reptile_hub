@@ -6,260 +6,283 @@
     <title>Reptile Hub</title>
     <script src="/static/js/chart.js"></script>
     <style>
-        :root { 
-            --bg: #f4f4f4; 
-            --text: #333; 
-            --btn: #fff; 
-            --btn-border: #ccc; 
+        :root {
+            --bg: #f0f2f5;
+            --text: #1a1a2e;
+            --btn: #ffffff;
+            --btn-border: #dde1e7;
+            --shadow: 0 2px 10px rgba(0,0,0,0.10);
+            --radius: 14px;
         }
 
-        body.dark-theme { 
-            --bg: #1a1a1a; 
-            --text: #f4f4f4; 
-            --btn: #333; 
-            --btn-border: #555; 
+        body.dark-theme {
+            --bg: #12131a;
+            --text: #e8eaf0;
+            --btn: #1e2030;
+            --btn-border: #2e3248;
+            --shadow: 0 2px 10px rgba(0,0,0,0.35);
         }
-        
-        body { 
-            background-color: var(--bg); 
-            color: var(--text); 
-            font-family: sans-serif; 
-            margin: 0; 
-            padding: 10px; 
-            height: 100vh; 
-            width: 100vw; 
-            overflow: hidden; 
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            margin: 0;
+            padding: 12px;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
             box-sizing: border-box;
             user-select: none;
         }
 
-        h1 { margin: 5px 0 15px 0; font-size: 26px; text-align: center; }
-        
-        /* Grid for main buttons */
-        #main-view { 
-            display: grid; 
-            grid-template-columns: 1fr 1fr; 
-            gap: 15px; 
-            margin-top: 15px;
+        h1 { margin: 6px 0 16px 0; font-size: 26px; text-align: center; font-weight: 700; letter-spacing: -0.3px; }
+
+        /* Responsive card grid — 2 cols on 4.3", more on larger screens */
+        #main-view {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 14px;
+            margin-top: 14px;
         }
 
+        /* Card: header-body layout */
         .animal-card {
-            background: var(--btn);
-            color: var(--text);
-            border: 2px solid var(--btn-border);
-            border-radius: 12px;
-            padding: 15px 10px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
+            border-radius: var(--radius);
+            overflow: hidden;
+            box-shadow: var(--shadow);
             cursor: pointer;
-            min-height: 110px;
-            /* Force Hardware Acceleration */
             transform: translateZ(0);
-            will-change: transform, border-color;
+            will-change: transform;
+            border: none;
+            background: transparent;
+        }
+        .animal-card:active { transform: scale(0.97) translateZ(0); }
+
+        .card-header {
+            padding: 11px 14px;
+            color: #fff;
+            font-size: 17px;
+            font-weight: 700;
+            letter-spacing: 0.2px;
+            display: flex;
+            align-items: center;
+            gap: 7px;
         }
 
-        .animal-card:active { 
-            transform: scale(0.95) translateZ(0);
+        .card-body {
+            background: var(--btn);
+            padding: 10px 14px 12px 14px;
         }
-        
+
+        .card-row {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            font-size: 13px;
+            padding: 3px 0;
+            color: var(--text);
+        }
+        .card-row .ci { font-size: 14px; opacity: 0.55; flex-shrink: 0; }
+
         /* Modal / Screens */
-        .screen { 
-            display: none; 
-            position: absolute; 
-            top: 0; 
-            left: 0; 
-            width: 100%; 
-            height: 100%; 
-            background: var(--bg); 
-            padding: 20px; 
-            box-sizing: border-box; 
-            z-index: 10; 
-            overflow-y: auto; 
+        .screen {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg);
+            padding: 20px;
+            box-sizing: border-box;
+            z-index: 10;
+            overflow-y: auto;
             padding-bottom: 100px;
             -webkit-overflow-scrolling: touch;
         }
         .active { display: block; }
-        
-        .action-btns { display: grid; grid-template-columns: 1fr; gap: 15px; margin-top: 20px; }
-        button { 
-            padding: 15px; font-size: 22px; border-radius: 8px; cursor: pointer; 
-            background: var(--btn); color: var(--text); border: 2px solid var(--btn-border);
-        }
-        
-        /* Status Animations & Borders */
-        @keyframes pulse-red {
-            0% { border-color: #ff4c4c; box-shadow: none; }
-            100% { border-color: #ff0000; box-shadow: 0 0 25px #ff0000, inset 0 0 15px rgba(255, 0, 0, 0.3); }
-        }
-        .needs-feeding { animation: pulse-red 0.4s ease-in-out infinite alternate; border-width: 4px !important; }
-        .status-critical { border: 2px solid #ff4c4c; }
-        .status-warning { border: 2px solid #ffa500; }
-        .status-good { border: 2px solid #4CAF50 !important; }
-        .status-burmating { border: 2px solid #ffa500; } /* steady yellow when burmating */
 
-        /* Food strike: red/yellow rotating border */
-        @property --strike-angle {
-            syntax: '<angle>';
-            initial-value: 0deg;
-            inherits: false;
+        .action-btns { display: grid; grid-template-columns: 1fr; gap: 12px; margin-top: 20px; }
+        button {
+            padding: 15px; font-size: 20px; border-radius: 10px; cursor: pointer;
+            background: var(--btn); color: var(--text); border: 1.5px solid var(--btn-border);
+            font-family: inherit; font-weight: 500;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+            transition: opacity 0.15s;
         }
-        @keyframes spin-strike { to { --strike-angle: 360deg; } }
-        .status-strike {
-            --strike-angle: 0deg;
-            animation: spin-strike 2s linear infinite !important;
-            border: 3px solid transparent !important;
-            background:
-                linear-gradient(var(--btn), var(--btn)) padding-box,
-                conic-gradient(from var(--strike-angle), #ff4c4c, #ffa500, #ff4c4c, #ffa500, #ff4c4c) border-box;
+        button:active { opacity: 0.75; }
+
+        /* ── Status: card header colours ── */
+        .status-good    .card-header { background: #3aaa5c; }
+        .status-burmating .card-header { background: #e09000; }
+        .status-critical .card-header { background: #e03030; }
+        .status-regurg  .card-header { background: #c05800; }
+
+        /* Pulsing red header for overdue feeding */
+        @keyframes pulse-header {
+            0%   { background: #e03030; }
+            100% { background: #ff0000; box-shadow: 0 4px 18px rgba(255,0,0,0.45); }
+        }
+        .needs-feeding .card-header {
+            animation: pulse-header 0.45s ease-in-out infinite alternate;
         }
 
-        /* Feeding result modal */
-        #feeding-modal {
+        /* Strike: flowing red↔yellow gradient on header */
+        @keyframes strike-flow {
+            0%   { background-position: 0% 50%; }
+            100% { background-position: 200% 50%; }
+        }
+        .status-strike .card-header {
+            background: linear-gradient(90deg, #e03030, #ffa500, #e03030, #ffa500);
+            background-size: 300% 100%;
+            animation: strike-flow 2s linear infinite;
+        }
+
+        /* ── Overlay modals (feeding, weight) ── */
+        .modal-overlay {
             display: none;
             position: fixed;
             top: 0; left: 0;
             width: 100%; height: 100%;
-            background: rgba(0,0,0,0.7);
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(3px);
             z-index: 500;
             align-items: center;
             justify-content: center;
         }
-        #feeding-modal.show { display: flex; }
-        .feeding-modal-box {
+        .modal-overlay.show { display: flex; }
+        .modal-box {
             background: var(--btn);
-            border: 2px solid var(--btn-border);
-            border-radius: 12px;
-            padding: 30px 25px;
-            width: 80%;
-            max-width: 320px;
+            border: 1.5px solid var(--btn-border);
+            border-radius: 16px;
+            padding: 28px 24px 22px 24px;
+            width: 85%;
+            max-width: 340px;
             text-align: center;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.22);
         }
+        .modal-box h2 { margin: 0 0 6px 0; font-size: 22px; }
+        .modal-box p  { margin: 0 0 20px 0; font-size: 16px; opacity: 0.8; }
+        .modal-btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
 
-        #burmation-btn.burmation-on { background: #4CAF50; color: white; }
-        #burmation-btn.burmation-off { background: #ccc; color: #333; }
+        #burmation-btn.burmation-on  { background: #3aaa5c; color: white; border-color: #2e8a4a; }
+        #burmation-btn.burmation-off { background: var(--btn); color: var(--text); }
 
-        /* FIXED ON-SCREEN BUTTONS */
-        #settings-btn { 
+        /* ── Fixed on-screen buttons ── */
+        #settings-btn {
             position: fixed;
-            bottom: 15px; 
-            right: 15px; 
-            font-size: 18px; 
-            padding: 12px 20px; 
-            z-index: 100; 
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            bottom: 15px;
+            right: 15px;
+            font-size: 17px;
+            padding: 12px 20px;
+            z-index: 100;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+            border-radius: 12px;
         }
 
-        /* Toggle dark mode on or off */
         #theme-toggle-btn {
             position: absolute;
             top: 10px;
             left: 10px;
-            font-size: 14px;
-            padding: 5px 10px;
+            font-size: 13px;
+            padding: 6px 12px;
             width: auto !important;
-            border-radius: 6px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
             cursor: pointer;
-            transition: all 0.2s;
-            background-color: #333 !important;
-            color: #fff !important;
-            border: 1px solid #111 !important;
+            background: #1e2030 !important;
+            color: #e8eaf0 !important;
+            border: 1px solid #2e3248 !important;
         }
-
         body.dark-theme #theme-toggle-btn {
-            background-color: #fff !important;
-            color: #333 !important;
-            border: 1px solid #ccc !important;
+            background: #e8eaf0 !important;
+            color: #1a1a2e !important;
+            border: 1px solid #dde1e7 !important;
         }
-        
-        .fixed-back-btn { 
+
+        .fixed-back-btn {
             position: fixed;
-            bottom: 15px; 
-            left: 15px; 
-            width: auto !important; 
-            font-size: 18px; 
-            padding: 12px 25px; 
-            z-index: 100; 
-            background: #ff4c4c; 
-            color: white; 
+            bottom: 15px;
+            left: 15px;
+            width: auto !important;
+            font-size: 17px;
+            padding: 12px 24px;
+            z-index: 100;
+            background: #e03030;
+            color: white;
             border: none;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.25);
         }
-
-        .fixed-edit-btn { 
-            position: fixed; 
-            bottom: 15px; 
-            right: 15px; 
-            width: auto !important; 
-            font-size: 18px; 
-            padding: 12px 25px; 
-            z-index: 100; 
+        .fixed-edit-btn {
+            position: fixed;
+            bottom: 15px;
+            right: 15px;
+            width: auto !important;
+            font-size: 17px;
+            padding: 12px 24px;
+            z-index: 100;
             background: #2196F3;
-            color: white; 
+            color: white;
             border: none;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.25);
         }
 
-        .switch {
-          position: relative;
-          display: inline-block;
-          width: 60px;
-          height: 34px;
-        }
-
-        /* Hide default HTML checkbox */
+        /* ── Toggle switch ── */
+        .switch { position: relative; display: inline-block; width: 56px; height: 30px; }
         .switch input { opacity: 0; width: 0; height: 0; }
-
         .slider {
-          position: absolute;
-          cursor: pointer;
-          top: 0; left: 0; right: 0; bottom: 0;
-          background-color: #ccc;
-          transition: .4s;
-          border-radius: 34px;
+            position: absolute; cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: var(--btn-border); transition: .3s; border-radius: 30px;
         }
-
         .slider:before {
-          position: absolute;
-          content: "";
-          height: 26px; width: 26px;
-          left: 4px; bottom: 4px;
-          background-color: white;
-          transition: .4s;
-          border-radius: 50%;
+            position: absolute; content: "";
+            height: 22px; width: 22px; left: 4px; bottom: 4px;
+            background: white; transition: .3s; border-radius: 50%;
         }
-
-        input:checked + .slider { background-color: #2196F3; }
+        input:checked + .slider { background: #2196F3; }
         input:checked + .slider:before { transform: translateX(26px); }
 
-        /* Form Inputs (Made Huge and Stacked) */
-        input, select { 
+        /* ── Form inputs ── */
+        input[type="text"], input[type="number"], input[type="password"], select {
             display: block;
-            padding: 15px; 
-            font-size: 22px;
-            margin: 10px 0 20px 0;
-            width: 100%; 
-            height: 60px;
-            box-sizing: border-box; 
-            background: var(--btn); 
-            color: var(--text); 
-            border: 2px solid var(--btn-border); 
-            border-radius: 8px;
-            user-select: auto; 
+            padding: 14px 16px;
+            font-size: 20px;
+            font-family: inherit;
+            margin: 8px 0 18px 0;
+            width: 100%;
+            height: 58px;
+            box-sizing: border-box;
+            background: var(--btn);
+            color: var(--text);
+            border: 1.5px solid var(--btn-border);
+            border-radius: 10px;
+            user-select: auto;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        input[type="text"]:focus, input[type="number"]:focus, input[type="password"]:focus, select:focus {
+            border-color: #2196F3;
         }
 
-        .toast { position: fixed; top: 20px; right: -400px; background: #4CAF50; color: white; padding: 15px 20px; border-radius: 8px; transition: right 0.4s; z-index: 10000; display: flex; align-items: center; gap: 12px; }
+        /* ── Section cards (used in settings) ── */
+        .section-card {
+            background: var(--btn);
+            border: 1.5px solid var(--btn-border);
+            border-radius: 14px;
+            padding: 16px;
+            margin-bottom: 18px;
+            box-shadow: var(--shadow);
+        }
+
+        .toast { position: fixed; top: 20px; right: -400px; background: #3aaa5c; color: white; padding: 14px 20px; border-radius: 10px; transition: right 0.4s; z-index: 10000; display: flex; align-items: center; gap: 12px; font-size: 16px; box-shadow: 0 4px 14px rgba(0,0,0,0.2); }
         .toast.show { right: 20px; }
-        .toast.error { background: #f44336; }
+        .toast.error { background: #e03030; }
 
-        body.dragging * {
-            pointer-events: none !important;
-        }
+        body.dragging * { pointer-events: none !important; }
 
         /* =============================================
            ON-SCREEN KEYBOARD (OSK)
@@ -367,15 +390,28 @@
     <!-- ===== END ON-SCREEN KEYBOARD ===== -->
 
     <!-- Feeding attempt result modal -->
-    <div id="feeding-modal">
-        <div class="feeding-modal-box">
-            <h2 style="margin: 0 0 8px 0; font-size: 24px;">Feeding Attempt</h2>
-            <p style="font-size: 18px; margin: 0 0 25px 0;">Did <strong id="feed-modal-name"></strong> eat?</p>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-                <button onclick="confirmFeeding(false)" style="background: #ffa500; color: white; border: none; font-size: 20px; padding: 15px; border-radius: 8px;">Refused</button>
-                <button onclick="confirmFeeding(true)" style="background: #4CAF50; color: white; border: none; font-size: 20px; padding: 15px; border-radius: 8px;">Fed!</button>
+    <div id="feeding-modal" class="modal-overlay">
+        <div class="modal-box">
+            <h2>Feeding Attempt</h2>
+            <p>Did <strong id="feed-modal-name"></strong> eat?</p>
+            <div class="modal-btn-row">
+                <button onclick="confirmFeeding(false)" style="background:#e09000;color:white;border:none;font-size:19px;padding:14px;border-radius:10px;">Refused</button>
+                <button onclick="confirmFeeding(true)"  style="background:#3aaa5c;color:white;border:none;font-size:19px;padding:14px;border-radius:10px;">Fed! ✓</button>
             </div>
-            <button onclick="closeFeedingModal()" style="margin-top: 15px; width: 100%; background: transparent; color: var(--text); border: 1px solid var(--btn-border); padding: 10px; border-radius: 8px; font-size: 16px;">Cancel</button>
+            <button onclick="closeFeedingModal()" style="margin-top:12px;width:100%;background:transparent;color:var(--text);border:1px solid var(--btn-border);padding:10px;border-radius:10px;font-size:15px;box-shadow:none;">Cancel</button>
+        </div>
+    </div>
+
+    <!-- Weight logging modal -->
+    <div id="weight-modal" class="modal-overlay">
+        <div class="modal-box">
+            <h2>⚖️ Log Weight</h2>
+            <p>Enter weight for <strong id="weight-modal-name"></strong></p>
+            <input type="number" id="weight-input" placeholder="Grams (e.g. 450)" style="margin-bottom:4px;">
+            <div class="modal-btn-row">
+                <button onclick="closeWeightModal()" style="background:transparent;border:1.5px solid var(--btn-border);font-size:18px;padding:13px;border-radius:10px;box-shadow:none;">Cancel</button>
+                <button onclick="confirmWeight()"     style="background:#2196F3;color:white;border:none;font-size:18px;padding:13px;border-radius:10px;">Save</button>
+            </div>
         </div>
     </div>
 
@@ -388,10 +424,11 @@
     <div id="animal-actions" class="screen">
         <h1 id="action-title">Animal Name</h1>
         <div class="action-btns">
-            <button onclick="openFeedingModal()">Feeding Attempted</button>
-            <button onclick="weighAnimal()">Animal Weighed</button>
-            <button onclick="showInfo()">Information</button>
-            <button id="burmation-btn" class="burmation-off" onclick="toggleBurmation()">Burmation: OFF</button>
+            <button onclick="openFeedingModal()">🍽️ Feeding Attempted</button>
+            <button onclick="openWeightModal()">⚖️ Log Weight</button>
+            <button onclick="showInfo()">ℹ️ Information</button>
+            <button onclick="logRegurgitation()" style="background:#c05800;color:white;border:none;">🤢 Regurgitated</button>
+            <button id="burmation-btn" class="burmation-off" onclick="toggleBurmation()">❄️ Burmation: OFF</button>
         </div>
         <button class="fixed-back-btn" onclick="showScreen('home')">Back</button>
     </div>
@@ -404,8 +441,10 @@
             <canvas id="weightChart"></canvas>
         </div>
         
+        <button onclick="exportWeightCSV()" style="width:100%;margin-top:14px;background:#2196F3;color:white;border:none;font-size:18px;padding:13px;border-radius:10px;">📥 Export Weights as CSV</button>
+
         <button class="fixed-back-btn" onclick="showScreen('animal-actions')">Back</button>
-        <button class="fixed-edit-btn" onclick="openEditScreen()"> Edit</button>
+        <button class="fixed-edit-btn" onclick="openEditScreen()">✏️ Edit</button>
     </div>
 
     <div id="edit-animal" class="screen">
@@ -442,27 +481,29 @@
 
         <button id="theme-toggle-btn" onclick="toggleTheme()">🌙 Dark</button>
 
-        <h1>Settings</h1>
-        <div style="background: var(--btn); border: 2px solid var(--btn-border); padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: center;">
-            <p style="margin:0;">Hub IP Address:</p>
-            <p style="margin:5px 0 0 0; font-size: 22px; font-weight: bold; color: #4CAF50;" id="pi-ip-address">Loading...</p>
-        </div>
-        
-        <div style="background: var(--btn); border: 2px solid var(--btn-border); padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: center;">
-            <p style="margin:0 0 10px 0; font-size: 18px;">Software Updates</p>
-            <p style="margin:0 0 10px 0; font-size: 14px; opacity: 0.7;" id="update-status">Not checked yet.</p>
-            <button id="check-update-btn" onclick="checkForUpdates()" style="width: 100%; background: #2196F3; color: white; border: none; font-size: 20px; padding: 12px; border-radius: 8px;">Check for Updates</button>
-            <button id="apply-update-btn" onclick="applyUpdate()" style="width: 100%; background: #4CAF50; color: white; border: none; font-size: 20px; padding: 12px; border-radius: 8px; margin-top: 10px; display: none;">Install Update</button>
+        <h1 style="margin-top: 46px;">Settings</h1>
+
+        <div class="section-card" style="text-align:center;">
+            <p style="margin:0 0 2px 0;font-size:13px;opacity:0.6;letter-spacing:0.5px;text-transform:uppercase;">Hub IP Address</p>
+            <p style="margin:0;font-size:24px;font-weight:700;color:#3aaa5c;" id="pi-ip-address">Loading...</p>
         </div>
 
-        <h3 style="margin-bottom: 5px; font-size: 24px;">Add New Animal</h3>
-        <input type="text" id="new-name" placeholder="Name">
-        <select id="new-category" onchange="updateSpecies()"></select>
-        <select id="new-species"></select>
-        <input type="number" id="new-freq" placeholder="Feed Freq (Days)">
-        <input type="number" id="new-strike-retry" placeholder="Retry Days After Refusal (default: 3)">
+        <div class="section-card">
+            <p style="margin:0 0 4px 0;font-size:15px;font-weight:600;">🔄 Software Updates</p>
+            <p style="margin:0 0 12px 0;font-size:13px;opacity:0.6;" id="update-status">Not checked yet.</p>
+            <button id="check-update-btn" onclick="checkForUpdates()" style="width:100%;background:#2196F3;color:white;border:none;font-size:18px;padding:12px;border-radius:10px;">Check for Updates</button>
+            <button id="apply-update-btn" onclick="applyUpdate()" style="width:100%;background:#3aaa5c;color:white;border:none;font-size:18px;padding:12px;border-radius:10px;margin-top:10px;display:none;">Install Update</button>
+        </div>
 
-        <button style="width: 100%; background: #4CAF50; color: white; border: none; font-size: 24px; padding: 15px; margin-top: 10px; margin-bottom: 40px;" onclick="addAnimal()">Add Animal</button>
+        <div class="section-card">
+            <p style="margin:0 0 14px 0;font-size:16px;font-weight:600;">➕ Add New Animal</p>
+            <input type="text" id="new-name" placeholder="Name">
+            <select id="new-category" onchange="updateSpecies()"></select>
+            <select id="new-species"></select>
+            <input type="number" id="new-freq" placeholder="Feed Frequency (Days)">
+            <input type="number" id="new-strike-retry" placeholder="Retry Days After Refusal (default: 3)">
+            <button onclick="addAnimal()" style="width:100%;background:#3aaa5c;color:white;border:none;font-size:20px;padding:15px;border-radius:10px;margin-top:4px;margin-bottom:4px;">Add Animal</button>
+        </div>
         
         <button class="fixed-back-btn" onclick="showScreen('home')">Back</button>
     </div>
@@ -533,29 +574,30 @@
                 // Draw the animal cards
                 const container = document.getElementById('main-view');
                 container.innerHTML = '';
+                const CATEGORY_EMOJI = { 'Snakes': '🐍', 'Lizards': '🦎', 'Geckos': '🦎', 'Turtles': '🐢' };
                 data.animals.forEach(animal => {
-                    // burmating overrides everything
                     let status = animal.status || 'good';
-                    if (animal.burmating) {
-                        status = 'burmating';
-                    }
-                    const card = document.createElement('div');
+                    if (animal.burmating) status = 'burmating';
                     const needsFeed = status === 'critical' && !animal.burmating;
+                    const catEmoji = CATEGORY_EMOJI[animal.category] || '🐾';
+                    const daysSince = (animal.days_since_fed !== null && animal.days_since_fed !== undefined)
+                        ? ` · ${animal.days_since_fed}d ago` : '';
+                    const nextLabel = animal.in_regurg ? `Recovery until ${animal.next_fed}` : `Next: ${animal.next_fed || 'ASAP'}`;
+
+                    const card = document.createElement('div');
                     card.className = `animal-card status-${status} ${needsFeed ? 'needs-feeding' : ''}`;
                     card.onclick = () => {
                         currentAnimal = animal;
                         document.getElementById('action-title').innerText = animal.name;
                         showScreen('animal-actions');
                     };
-                    const daysSince = (animal.days_since_fed !== null && animal.days_since_fed !== undefined)
-                        ? `<span style="opacity:0.6;">${animal.days_since_fed}d ago</span>` : '';
                     card.innerHTML = `
-                        <div style="font-size: 24px; font-weight: bold;">${animal.name}</div>
-                        <div style="font-size: 14px; margin-bottom: 8px;">${animal.species}</div>
-                        <div style="font-size: 13px; opacity: 0.9;">
-                            Next: ${animal.next_fed || 'ASAP'}${daysSince ? ` &nbsp;·&nbsp; <span style="opacity:0.6;">${animal.days_since_fed}d ago</span>` : ''}
+                        <div class="card-header">${animal.name}</div>
+                        <div class="card-body">
+                            <div class="card-row"><span class="ci">${catEmoji}</span>${animal.species}</div>
+                            <div class="card-row"><span class="ci">📅</span>${nextLabel}${daysSince}</div>
+                            <div class="card-row"><span class="ci">⚖️</span>${animal.last_weight || 'No data'}</div>
                         </div>
-                        <div style="font-size: 12px; opacity: 0.7; margin-top: 4px;">W: ${animal.last_weight || 'No data'}</div>
                     `;
                     container.appendChild(card);
                 });
@@ -638,9 +680,55 @@
             loadData();
         }
 
-        function weighAnimal() {
-            const weight = prompt("Grams:");
-            if (weight && !isNaN(weight)) logAction('weighed', parseFloat(weight));
+        function openWeightModal() {
+            document.getElementById('weight-modal-name').innerText = currentAnimal.name;
+            document.getElementById('weight-input').value = '';
+            document.getElementById('weight-modal').classList.add('show');
+            setTimeout(() => document.getElementById('weight-input').focus(), 50);
+        }
+
+        function closeWeightModal() {
+            document.getElementById('weight-modal').classList.remove('show');
+            hideKeyboard();
+        }
+
+        async function confirmWeight() {
+            const val = document.getElementById('weight-input').value;
+            if (!val || isNaN(val)) return showToast('Enter a valid weight', true);
+            closeWeightModal();
+            await logAction('weighed', parseFloat(val));
+        }
+
+        async function logRegurgitation() {
+            if (!confirm(`Log regurgitation for ${currentAnimal.name}? This will reset the feeding timeline.`)) return;
+            await fetch('/api/action', {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({animal_id: currentAnimal.id, action: 'regurgitated', value: 0})
+            });
+            showToast('Regurgitation logged. Feeding timeline reset.');
+            showScreen('home');
+        }
+
+        function exportWeightCSV() {
+            fetch(`/api/weight_history/${currentAnimal.id}`)
+                .then(r => r.json())
+                .then(history => {
+                    if (!history.length) return showToast('No weight data to export', true);
+                    const rows = [['Date', 'Weight (g)'], ...history.map(h => [h.date, h.weight])];
+                    const csv = rows.map(r => r.join(',')).join('\n');
+                    const blob = new Blob([csv], { type: 'text/csv' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    const today = new Date().toISOString().split('T')[0];
+                    a.href = url;
+                    a.download = `${currentAnimal.name.replace(/\s+/g,'_')}_weights_${today}.csv`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    showToast('CSV exported!');
+                })
+                .catch(() => showToast('Export failed', true));
         }
 
         async function drawWeightChart() {
@@ -717,29 +805,37 @@
         }
 
         function showInfo() {
-            document.getElementById('info-title').innerText = currentAnimal.name + " Info";
+            document.getElementById('info-title').innerText = currentAnimal.name;
             const daysSince = (currentAnimal.days_since_fed !== null && currentAnimal.days_since_fed !== undefined)
                 ? `${currentAnimal.days_since_fed} days ago` : 'N/A';
             const strikeRow = currentAnimal.last_attempted_fed
-                ? `<strong>Last Attempted:</strong> ${currentAnimal.last_attempted_fed}<br>` : '';
+                ? `<div class="info-row"><span class="info-label">Last Attempted</span><span>${currentAnimal.last_attempted_fed}</span></div>` : '';
+            const regurgRow = currentAnimal.regurg_date
+                ? `<div class="info-row" style="color:#c05800;"><span class="info-label">🤢 Regurgitated</span><span>${currentAnimal.regurg_date}</span></div>` : '';
             let html = `
-                <strong>Last Fed:</strong> ${currentAnimal.last_fed} <small style="opacity:0.6;">(${daysSince})</small><br>
-                ${strikeRow}
-                <strong>Next Feed:</strong> ${currentAnimal.next_fed}<br>
-                <strong>Freq:</strong> Every ${currentAnimal.feed_days} days<br>
-                <strong>Strike Retry:</strong> ${currentAnimal.strike_retry_days || 3} days after refusal<br>
-                <strong>Weight:</strong> ${currentAnimal.last_weight}<br>
-                <small>(Weighed: ${currentAnimal.last_weighed_date})</small><br>
-                <strong>Burmation:</strong> ${currentAnimal.burmating ? 'Yes' : 'No'}
-                <hr style="border:0; border-top:1px solid var(--btn-border); margin:15px 0;">
-                <div style="background:var(--btn); border:2px solid #4CAF50; padding:10px; border-radius:10px;">
-                    <strong style="color:#4CAF50;">🍽️ Feeder Recommendation:</strong><br>
-                    <div style="margin-top:5px;">${currentAnimal.feeder_rec}</div>
+                <style>
+                    .info-row { display:flex; justify-content:space-between; padding:7px 0; border-bottom:1px solid var(--btn-border); font-size:17px; }
+                    .info-row:last-child { border-bottom:none; }
+                    .info-label { font-weight:600; opacity:0.7; }
+                </style>
+                <div class="section-card" style="margin-bottom:14px;">
+                    <div class="info-row"><span class="info-label">Last Fed</span><span>${currentAnimal.last_fed} <small style="opacity:0.5;">(${daysSince})</small></span></div>
+                    ${strikeRow}
+                    ${regurgRow}
+                    <div class="info-row"><span class="info-label">Next Feed</span><span>${currentAnimal.next_fed}</span></div>
+                    <div class="info-row"><span class="info-label">Frequency</span><span>Every ${currentAnimal.feed_days} days</span></div>
+                    <div class="info-row"><span class="info-label">Strike Retry</span><span>${currentAnimal.strike_retry_days || 3} days</span></div>
+                    <div class="info-row"><span class="info-label">Weight</span><span>${currentAnimal.last_weight} <small style="opacity:0.5;">(${currentAnimal.last_weighed_date})</small></span></div>
+                    <div class="info-row"><span class="info-label">Burmation</span><span>${currentAnimal.burmating ? '❄️ Yes' : 'No'}</span></div>
+                </div>
+                <div class="section-card">
+                    <p style="margin:0 0 8px 0;font-size:14px;font-weight:600;color:#3aaa5c;">🍽️ Feeder Recommendation</p>
+                    <div style="font-size:15px;line-height:1.6;">${currentAnimal.feeder_rec}</div>
                 </div>
             `;
             document.getElementById('info-content').innerHTML = html;
             showScreen('animal-info');
-            setTimeout(() => { drawWeightChart();}, 50);
+            setTimeout(() => drawWeightChart(), 50);
         }
 
         async function addAnimal() {
@@ -1130,7 +1226,7 @@
         osk.addEventListener('mousedown',  e => e.stopPropagation());
 
         // Wire up focus listeners on all managed inputs
-        const OSK_INPUT_IDS = ['new-name','new-freq','new-strike-retry','edit-name','edit-freq','edit-strike-retry','edit-weight'];
+        const OSK_INPUT_IDS = ['new-name','new-freq','new-strike-retry','edit-name','edit-freq','edit-strike-retry','edit-weight','weight-input'];
         OSK_INPUT_IDS.forEach(id => {
             const el = document.getElementById(id);
             if (el) el.addEventListener('focus', () => showKeyboard(el));

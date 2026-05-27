@@ -14,6 +14,12 @@ ANIMAL_MODULES = {
     crested_gecko.SPECIES_NAME: crested_gecko
 }
 
+def get_regurg_wait(species_name):
+    """Return the number of days to wait after a regurgitation event for this species."""
+    module = ANIMAL_MODULES.get(species_name)
+    return getattr(module, 'REGURG_WAIT_DAYS', 14)  # 14 days is a safe default
+
+
 def calculate_feeder(species_name, weight):
     """Finds the correct animal module and runs its specific math."""
     module = ANIMAL_MODULES.get(species_name)

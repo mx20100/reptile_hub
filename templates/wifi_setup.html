@@ -1,148 +1,170 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Wi-Fi Setup</title>
+    <meta charset="UTF-8">
+    <title>Reptile Hub — Wi-Fi Setup</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
-        body { 
-            font-family: Arial, sans-serif; 
-            background: #f4f4f4; 
-            margin: 0; 
-            padding: 20px; 
-            height: 100vh; 
-            width: 100vw; 
-            box-sizing: border-box; 
-            display: flex; 
-            flex-direction: column; 
+        :root {
+            --bg: #f0f2f5;
+            --card: #ffffff;
+            --text: #1a1a2e;
+            --border: #dde1e7;
+            --accent: #3aaa5c;
+            --radius: 14px;
+        }
+
+        *, *::before, *::after { box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
+            padding: 24px 20px;
+            user-select: none;
         }
-        h1, p { text-align: center; }
-        
-        /* Apply exact same box-sizing and width to all inputs/buttons so they match */
-        select, input, button { 
-            width: 80%; 
-            max-width: 500px;
-            padding: 15px; 
-            margin: 10px 0; 
-            font-size: 20px; 
-            border-radius: 8px; 
-            border: 1px solid #ccc; 
-            box-sizing: border-box;
+
+        .card {
+            background: var(--card);
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.10);
+            padding: 32px 28px 28px 28px;
+            width: 100%;
+            max-width: 420px;
+            text-align: center;
         }
-        button { 
-            color: white; 
-            background: #333; 
-            border: none; 
-            cursor: pointer; 
+
+        .logo { font-size: 42px; margin-bottom: 8px; }
+        h1 { margin: 0 0 6px 0; font-size: 24px; font-weight: 700; }
+        .subtitle { font-size: 15px; opacity: 0.6; margin: 0 0 24px 0; }
+
+        select, input {
+            display: block;
+            width: 100%;
+            padding: 14px 16px;
+            font-size: 18px;
+            font-family: inherit;
+            margin: 0 0 14px 0;
+            background: var(--bg);
+            color: var(--text);
+            border: 1.5px solid var(--border);
+            border-radius: 10px;
+            outline: none;
+            user-select: auto;
+            transition: border-color 0.2s;
         }
-        .skip-btn { background: #888; }
-        #loading { display: none; font-size: 20px; color: #555; margin-top: 20px; }
+        input:focus, select:focus { border-color: var(--accent); }
+
+        button {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            font-size: 18px;
+            font-family: inherit;
+            font-weight: 600;
+            border-radius: 10px;
+            border: none;
+            cursor: pointer;
+            margin-bottom: 10px;
+            transition: opacity 0.15s;
+        }
+        button:active { opacity: 0.75; }
+
+        .btn-connect { background: var(--accent); color: white; }
+        .btn-skip    { background: transparent; color: var(--text); border: 1.5px solid var(--border); font-weight: 500; }
+
+        #loading {
+            display: none;
+            margin-top: 18px;
+            font-size: 16px;
+            opacity: 0.6;
+            text-align: center;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 16px; height: 16px;
+            border: 2px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+            vertical-align: middle;
+            margin-right: 6px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
-    <h1>Welcome to Reptile Hub</h1>
-    <p>Select a Wi-Fi network to get started.</p>
-    
-    <select id="network-list">
-        <option>Scanning for networks...</option>
-    </select>
-    
-    <input type="password" id="password" placeholder="Wi-Fi Password (if required)">
-    
-    <button onclick="connectWifi()">Connect</button>
-    <button class="skip-btn" onclick="skipWifi()">Skip for Now</button>
-    
-    <div id="loading">Connecting... please wait.</div>
+    <div class="card">
+        <div class="logo">🦎</div>
+        <h1>Reptile Hub</h1>
+        <p class="subtitle">Select your Wi-Fi network to get started.</p>
+
+        <select id="network-list">
+            <option>Scanning for networks...</option>
+        </select>
+
+        <input type="password" id="password" placeholder="Wi-Fi Password (if required)">
+
+        <button class="btn-connect" onclick="connectWifi()">📶 Connect</button>
+        <button class="btn-skip"    onclick="skipWifi()">Skip for Now</button>
+
+        <div id="loading"><span class="spinner"></span>Connecting, please wait...</div>
+    </div>
 
     <script>
-        // Scan for networks as soon as the page loads
         window.onload = async () => {
             try {
-                const res = await fetch('/api/wifi/scan');
+                const res  = await fetch('/api/wifi/scan');
                 const data = await res.json();
-                const select = document.getElementById('network-list');
-                select.innerHTML = '';
-                
-                if(data.networks && data.networks.length > 0) {
+                const sel  = document.getElementById('network-list');
+                sel.innerHTML = '';
+                if (data.networks && data.networks.length > 0) {
                     data.networks.forEach(net => {
-                        select.innerHTML += `<option value="${net}">${net}</option>`;
+                        sel.innerHTML += `<option value="${net}">${net}</option>`;
                     });
                 } else {
-                    select.innerHTML = `<option>No networks found.</option>`;
+                    sel.innerHTML = `<option>No networks found — try again</option>`;
                 }
             } catch (err) {
-                document.getElementById('network-list').innerHTML = `<option>Error scanning.</option>`;
+                document.getElementById('network-list').innerHTML = `<option>Error scanning</option>`;
             }
         };
 
         async function connectWifi() {
-            const ssid = document.getElementById('network-list').value;
+            const ssid     = document.getElementById('network-list').value;
             const password = document.getElementById('password').value;
             document.getElementById('loading').style.display = 'block';
-            
             try {
-                const res = await fetch('/api/wifi/connect', {
+                const res  = await fetch('/api/wifi/connect', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({ssid, password})
                 });
                 const data = await res.json();
-                
-                if(data.success) {
-                    // Send the user back to the main Hub instead of reloading
-                    window.location.href = '/'; 
+                if (data.success) {
+                    window.location.href = '/';
                 } else {
-                    alert("Failed to connect: " + (data.error || "Please check the password."));
+                    alert('Failed to connect: ' + (data.error || 'Please check the password.'));
                     document.getElementById('loading').style.display = 'none';
                 }
-            } catch(err) {
-                alert("Network error trying to connect.");
+            } catch (err) {
+                alert('Network error trying to connect.');
                 document.getElementById('loading').style.display = 'none';
             }
         }
 
         async function skipWifi() {
-            await fetch('/api/wifi/skip', { method: 'POST' });
-            // Send the user back to the main Hub instead of reloading
-            window.location.href = '/'; 
+            await fetch('/api/wifi/skip', {method: 'POST'});
+            window.location.href = '/';
         }
     </script>
-    <style>
-    /* Prevents accidental text highlighting while dragging your finger */
-    body { user-select: none; }
-    input, textarea, select { user-select: auto; }
-</style>
-
-<script>
-    // Prevent Keyboard from hiding inputs
-    document.querySelectorAll('input[type="text"], input[type="password"], textarea').forEach(input => {
-        input.addEventListener('focus', () => {
-            setTimeout(() => {
-                input.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }, 300);
-        });
-    });
-
-    // Touch Drag to Scroll
-    let isDown = false;
-    let startY;
-    let scrollTop;
-
-    document.body.addEventListener('mousedown', (e) => {
-        isDown = true;
-        startY = e.pageY - document.documentElement.offsetTop;
-        scrollTop = document.documentElement.scrollTop;
-    });
-    document.body.addEventListener('mouseleave', () => { isDown = false; });
-    document.body.addEventListener('mouseup', () => { isDown = false; });
-    document.body.addEventListener('mousemove', (e) => {
-        if (!isDown) return;
-        e.preventDefault(); 
-        const y = e.pageY - document.documentElement.offsetTop;
-        const walk = (y - startY) * 1.5; 
-        document.documentElement.scrollTop = scrollTop - walk;
-    });
-</script>
 </body>
 </html>
