@@ -10,4 +10,4 @@ git fetch origin main
 git reset --hard origin/main
 
 echo "[update] Rebooting Pi..."
-/sbin/reboot
+/sbin/reboot -f
